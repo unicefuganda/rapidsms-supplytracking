@@ -144,14 +144,8 @@ class ModelTest(TestCase):
                 ScriptProgress.objects.filter(script=admin_script, connection=admins[0].default_connection).step,
                 ScriptProgress.objects.filter(script=admin_script, connection=admins[1].default_connection).step)
 
-        self.assertEquals(admin_1_response, None)
-
-        self.assertEquals(admin_2_response, None)
-        self.elapseTime(86400)
 
         admin_1_response = check_progress(admins[0].default_connection)
-
-        admin_2_response = check_progress(admins[1].default_connection)
 
         self.assertEquals(admin_1_response, admin_script.steps.get(order=1).email)
 
@@ -181,7 +175,32 @@ class ModelTest(TestCase):
         self.assertEquals(response, transporter_script.steps.get(order=0).poll.message)
 
     def testFulldeliveryScript(self):
-        pass
+        admin_script = Scripts.objects.get(slug='hq_supply_staff')
+        #prompt for excel upload
+        admins = Contact.objects.filter(group=Group.objects.get(slug='unicef_supply'))
+        for admin in admins:
+            progress = ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script)
+
+        admin_1_response = check_progress(admins[0].default_connection)
+
+        admin_2_response = check_progress(admins[1].default_connection)
+
+        #have the admins been prompted to upload excel sheet?
+
+        self.assertEquals(admin_1_response, admin_script.steps.get(order=0).email)
+
+        self.assertEquals(admin_2_response, admin_script.steps.get(order=0).email)
+
+        #a sheet is uploaded  when a new delivery script is created
+
+        delivery = Delivery.objects.create(waybill="test001", date_shipped=date_shipped, consignee=consignee_connection,
+                                           transporter=transporter_connection)
+
+        # a script upload should start the the consignee script
+        
+
+
+        
 
 
 
