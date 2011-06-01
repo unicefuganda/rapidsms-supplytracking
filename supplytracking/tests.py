@@ -46,8 +46,6 @@ class ModelTest(TestCase):
         admin_script = Script.objects.get(slug='hq_supply_staff')
         #prompt for excel upload
         admins = Contact.objects.filter(group=Group.objects.get(slug='admin_supply'))
-        for admin in admins:
-            progress = ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script)
 
         admin_1_response = check_progress(admins[0].default_connection)
 
@@ -61,8 +59,8 @@ class ModelTest(TestCase):
 
         #a sheet is uploaded  when a new delivery script is created
 
-        delivery = Delivery.objects.create(waybill="del001", date_shipped=date_shipped, consignee=consignee_connection,
-                                           transporter=transporter_connection)
+        delivery = Delivery.objects.create(waybill="del001", date_shipped=date_shipped, consignee=Contact.objects.filter(group=Group.objects.get(name='consignee'))[0],
+                                           transporter=Contact.objects.filter(group=Group.objects.get(name='transporter'))[0])
 
         # a script upload moves the admin script to the next step
 

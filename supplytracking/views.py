@@ -13,43 +13,48 @@ class UploadForm(forms.Form):
                                     label='No delivery', required=False)
     excel_file = forms.FileField(label="Excel File")
 
+def parse_header_row(worksheet):
+    fields=['transporter','waybill','consignee','date_shipped','status']
+    field_cols={}
+    for col in range(worksheet.ncols):
+        value = sheet.cell(0, col).value
+        for field in fields:
+            if value.find(field) >= 0:
+                field_cols[field]=col
+    return field_cols
+
+
+def parse_waybill(row):
+    return worksheet.cell(row, cols['waybill']).value
+
+def parse_transporter(row):
+    return Contact.objects.get(name__icontains=worksheet.cell(row, cols['transporter']).value)
+
+def parse_status(row):
+    return worksheet.cell(row, cols['status']).value
+
+def parse_consignee(row):
+    return Contact.objects.get(name__icontains=(worksheet.cell(row, cols['consignee']).value))
+
+def parse_date_shipped(row):
+    return dateutil.parser.parse(worksheet.cell(row, cols['date_shipped']).value)
 
 def handle_excel_file(file):
     if  file:
         excel = file.read()
         workbook = open_workbook(file_contents=excel)
-        sheet = workbook.sheet_by_index(0)
-        #iterate over the first row
-        #and get the cell containing waybills
-        way_bill_col = ''
-        consignee_col = ''
-        date_shipped_col = ''
+        worksheet = workbook.sheet_by_index(0)
 
-        for col in range(sheet.ncols):
-            value = sheet.cell(0, col).value
-            if value.find("waybill") >= 0:
-                way_bill_col = col
-            if value.find("consignee") >= 0:
-                consignee_col = col
-            if value.find("transporter") >= 0:
-                transporter_col = col
-            if value.find("shipped") >= 0 and value.find("date"):
-                date_shipped_col = col
 
-            #create delivery objects
-
+        cols=parse_header(worksheet)
         for row in range(sheet.nrows):
-            transporter_connection = Connection.objects.create(identity=sheet.cell(row, transporter_col),
-                                                               backend=assign_backend(sheet.cell(row, transporter_col)),
-                                                               contact=Contact.objects.create(name='anon_transporter',group=Team.objects.get_or_create(name='consignee')))
-            consignee_connection = Connection.objects.create(identity=sheet.cell(row, consignee_col),
-                                                             backend=sheet.cell(row, consignee_col),
-                                                             contact=Contact.objects.create(name='anon_consignee',group=Team.objects.get_or_create(name='consignee')))
-            delivery = Delivery.objects.create(waybill=sheet.cell(row, way_bill_col),
-                                               date_shipped=dateutil.parser.parse(
-                                                       sheet.cell(row, date_shipped_col).value),
-                                               consignee=consignee_connection.contact,
-                                               transporter=transporter_connection.contact)
+            delivery=Delivery.objects.create(waybill=parse_waybill(row),
+                                               date_shipped=parse_date_shipped(row) ,
+                                               consignee=parse_consignee(row),
+                                               transporter=parse_transporter(row))
+
+
+        if delivery:
             post_save.connect(script_creation_handler,sender=delivery)
 
 
