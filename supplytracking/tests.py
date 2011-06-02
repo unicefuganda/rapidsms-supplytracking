@@ -11,7 +11,8 @@ from supplytracking.models import *
 from supplytracking.utils import create_scripts
 from django.contrib.auth.models import Group
 from django.db import connection
-from supplutracking.views import UploadForm
+from supplytracking.views import UploadForm
+import os
 
 
 class ModelTest(TestCase):
@@ -123,7 +124,7 @@ class ModelTest(TestCase):
 
         # a script upload should start the the consignee script
      def test_form(self):
-        upload_file = open('fixtures/excel.xls', 'rb')
+        upload_file = open(os.getcwd()+os.sep+'supplytracking'+os.sep+'fixtures'+os.sep+'excel.xls', 'rb')
         file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
         form = MyForm(file_dict)
         self.assertTrue(form.is_valid())
