@@ -11,6 +11,7 @@ def create_scripts():
             'domain':'example.com',
         })
     admin_script = Script.objects.create(slug="hq_supply_staff",name="supply staff script")
+    admin_script.sites.add(Site.objects.get_current())
     reminder_email=Email.objects.create(subject="SupplyTracking: Excel Upload reminder" ,message="You are reminded to upload the deliveries excel script")
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
@@ -35,7 +36,7 @@ def create_scripts():
            slug="transporter",
            name="transporter script"
            )
-
+    transporter_script.sites.add(Site.objects.get_current())
     delivery_poll = Poll.create_yesno('consignment_delivered', 'Has the consignment been delivered?',"Thanks for your response", [], user)
     transporter_script.steps.add(ScriptStep.objects.create(
            script=transporter_script,
@@ -53,7 +54,7 @@ def create_scripts():
            slug="consignee",
            name="script for consignee",
            )
-
+    consignee_script.sites.add(Site.objects.get_current())
     consignee_script.steps.add(ScriptStep.objects.create(
            script=consignee_script,
            message='consignment sent !',
