@@ -10,6 +10,7 @@ from supplytracking.models import *
 from supplytracking.utils import create_scripts
 from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
+from django.db import connection
 from rapidsms.models import Connection,Contact
 from supplytracking.views import UploadForm
 import os
@@ -51,14 +52,12 @@ class ModelTest(TestCase):
 
         admin_script = Script.objects.get(slug='hq_supply_staff')
         admins = Contact.objects.filter(groups=Group.objects.get(name='supply_admin'))
+        progress = []
         for admin in admins:
-            ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script)
+            progress.append(ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script))
         response = check_progress(admins[0].default_connection)
-        #have the admins been prompted to upload excel sheet?
         self.assertEquals(response, admin_script.steps.get(order=0).email)
-#        wait a day without response
-        progress = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
-        self.elapseTime(progress, 86401)
+        self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
         
