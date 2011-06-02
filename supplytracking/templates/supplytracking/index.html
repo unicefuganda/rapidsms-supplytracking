@@ -1,11 +1,14 @@
 {% extends 'layout.html' %}
 
 {%  block content %}
+    <div class="module">
+    <h3>Upload Deliveries Excel File</h3>
 <table>
 <form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
 {{form.as_table}}
 <tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
 </form>
 </table>
-
+        </div>
+<p>{{ message }}</p>
 {% endblock %}
