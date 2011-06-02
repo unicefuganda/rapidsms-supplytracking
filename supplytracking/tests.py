@@ -12,13 +12,14 @@ from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
 from rapidsms.models import Connection,Contact
 from supplytracking.views import UploadForm
+from django.db import connection
 import os
 
 
 
 class ModelTest(TestCase):
 
-     fixtures = ['test_supplytracking.json']
+     #fixtures = ['test_supplytracking.json']
      def setUp(self):
          create_scripts()
 
@@ -125,9 +126,9 @@ class ModelTest(TestCase):
 
         # a script upload should start the the consignee script
      def testExcelImport(self):
-        upload_file = open(os.path.join('fixtures',os.path.realpath(os.path.dirname(__file__)))+'excel.xls', 'rb')
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
         file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
-        form = MyForm(file_dict)
+        form = UploadForm(file_dict)
         self.assertTrue(form.is_valid())
         #test Delivery object creation
         
