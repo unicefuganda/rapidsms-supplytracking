@@ -3,6 +3,7 @@ from django.template import RequestContext
 from django import forms
 from django.db.models.signals import post_save
 from django.forms.util import ErrorList
+from django.db import IntegrityError
 
 from xlrd import open_workbook
 from uganda_common.utils import assign_backend
@@ -67,14 +68,16 @@ def handle_excel_file(file):
         cols=parse_header_row(worksheet)
         deliveries=[]
         for row in range(worksheet.nrows)[1:]:
-            delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
-                                               date_shipped=parse_date_shipped(row,worksheet,cols) ,
-                                               consignee=parse_consignee(row,worksheet,cols),)
-                                               #transporter=parse_transporter(row,worksheet,cols))
+            try:
+                delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
+                                                   date_shipped=parse_date_shipped(row,worksheet,cols) ,
+                                                   consignee=parse_consignee(row,worksheet,cols),)
+                                                   #transporter=parse_transporter(row,worksheet,cols))
+                post_save.connect(script_creation_handler,sender=delivery)
+                deliveries.append(delivery.waybill)
+            except IntegrityError:
+                pass
 
-
-            post_save.connect(script_creation_handler,sender=delivery)
-            deliveries.append(delivery.waybill)
         return 'deliveries with waybills ' +' ,'.join(deliveries) + " have been uploaded !"
     else:
         return "Invalid file"

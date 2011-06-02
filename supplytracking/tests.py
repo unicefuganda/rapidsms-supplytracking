@@ -9,7 +9,7 @@ from script.utils.outgoing import check_progress
 from script.models import *
 from supplytracking.models import *
 from supplytracking.utils import create_scripts
-from supplutracking.views import UploadForm
+from supplytracking.views import UploadForm
 
 
 class ModelTest(TestCase):
@@ -127,8 +127,8 @@ class ModelTest(TestCase):
                                            transporter=transporter_connection)
 
         # a script upload should start the the consignee script
-     def test_form(self):
-        upload_file = open('fixtures/excel.xls', 'rb')
+     def testExcelImport(self):
+        upload_file = open(os.path.join('fixtures',os.path.realpath(os.path.dirname(__file__)))+'excel.xls', 'rb')
         file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
         form = MyForm(file_dict)
         self.assertTrue(form.is_valid())
@@ -137,7 +137,15 @@ class ModelTest(TestCase):
         msg=handle_excel_file(form.cleaned_data['excel_file'])
 
         self.assertEquals(msg, "deliveries with waybills KP/WB11/00034 ,KP/WB11/00035 ,KP/WB11/00036 have been uploaded !")
-        
+
+        deliveries =Delivery.objects.all()
+
+        #make sure 3 deliveries were created
+        self.assertEqual(deliveries.count(),3)
+
+        #make sure all the deliveries have consignees
+        for delivery in deliveries:
+            pass
         
 
      
