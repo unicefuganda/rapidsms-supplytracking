@@ -1,6 +1,8 @@
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
+
 
 from script.utils.incoming import incoming_progress
 from script.utils.outgoing import check_progress
@@ -9,6 +11,7 @@ from supplytracking.models import *
 from supplytracking.utils import create_scripts
 from django.contrib.auth.models import Group
 from django.db import connection
+from supplutracking.views import UploadForm
 
 
 class ModelTest(TestCase):
@@ -119,6 +122,21 @@ class ModelTest(TestCase):
 #                                           transporter=transporter_connection)
 
         # a script upload should start the the consignee script
+     def test_form(self):
+        upload_file = open('fixtures/excel.xls', 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = MyForm(file_dict)
+        self.assertTrue(form.is_valid())
+        #test Delivery object creation
+        
+        msg=handle_excel_file(form.cleaned_data['excel_file'])
+
+        self.assertEquals(msg, "deliveries with waybills KP/WB11/00034 ,KP/WB11/00035 ,KP/WB11/00036 have been uploaded !")
+        
+        
+
+     
+
 
 
 

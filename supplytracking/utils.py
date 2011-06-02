@@ -3,6 +3,7 @@ from status160.models import Team
 from supplytracking.models import *
 from django.contrib.auth.models import User
 from django.conf import settings
+
 def create_scripts():
     
 
@@ -84,31 +85,6 @@ def script_creation_handler(sender, **kwargs):
                                           connection=instance.transporter.default_connection)
     ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
                                           connection=instance.consignee.default_connection)
-
-def load_consignees(file):
-    if  file:
-            excel = file.read()
-            workbook = open_workbook(file_contents=excel)
-            sheet = workbook.sheet_by_index(0)
-            #iterate over the first row
-            #and get the cell containing waybills
-            name_col = ''
-            telephone_col = ''
-            date_shipped_col = ''
-
-            for col in range(sheet.ncols):
-                value = sheet.cell(0, col).value
-                if value.find("Company Name") >= 0:
-                    name_col = col
-                if value.find("Telephone") >= 0:
-                    telephone_col = col
-            consignee=Group.objects.get_or_create(name='consignee')
-            for row in range(sheet.nrows):
-                contact=Contact.objects.create(name=sheet.cell(row, name_col).value,group=consignee)
-                connection=Connection.objects.create(identity=sheet.cell(row, transporter_col),
-                                                                   backend=assign_backend(sheet.cell(row, telephone_col).value))
-                connection.contact=contact
-                connection.save()
 
 
 
