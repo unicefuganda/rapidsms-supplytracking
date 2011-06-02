@@ -11,6 +11,9 @@ from supplytracking.utils import create_scripts
 from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
 from rapidsms.models import Connection,Contact
+from supplytracking.views import UploadForm
+import os
+
 
 
 class ModelTest(TestCase):
