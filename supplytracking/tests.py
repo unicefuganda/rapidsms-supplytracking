@@ -89,7 +89,7 @@ class ModelTest(TestCase):
         self.assertEquals(progress[1].step.order, 0)
         
         # after 3 days, admins should be moved to the next step
-        self.elapseTime(progress[1], 86401*3)
+        self.elapseTime(progress[1], 259201)
         response = check_progress(admins[1].default_connection)
         progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
         self.assertEquals(progress[1].step.order, 1)
@@ -103,19 +103,20 @@ class ModelTest(TestCase):
         self.assertEquals(check_progress(admins[0].default_connection), check_progress(admins[0].default_connection))
         self.assertEquals(check_progress(admins[0].default_connection), admin_script.steps.get(order=1).email)
 
-
-
-
      def testTransporterScript(self):
         delivery=Delivery.objects.get(waybill="del001")
         transporter_script=Script.objects.get(slug='transporter')
         transporter_connection = Contact.objects.get(name=delivery.transporter).default_connection
         progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)
         response = check_progress(transporter_connection)
+        self.assertEquals(progress.step, None)
         self.assertEquals(response, None)
-        self.elapseTime(progress, 259200)
+        #wait 3 days
+        self.elapseTime(progress, 259201)
         response = check_progress(transporter_connection)
-        self.assertEquals(response, transporter_script.steps.get(order=0).poll)
+        progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)
+        self.assertEquals(progress.step.order, 0)
+        self.assertEquals(response, 'Has the consignment been delivered?')
 
 
 

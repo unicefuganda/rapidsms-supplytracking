@@ -51,9 +51,10 @@ def create_scripts():
            script=transporter_script,
            poll=delivery_poll,
            order=0,
-           rule=ScriptStep.STRICT,
+           rule=ScriptStep.RESEND_MOVEON,
            start_offset=3600 * 24 * 3,
            retry_offset=3600 * 24,
+           num_tries=3,
            ))
 
 
