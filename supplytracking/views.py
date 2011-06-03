@@ -70,8 +70,8 @@ def handle_excel_file(file):
             try:
                 delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
                                                    date_shipped=parse_date_shipped(row,worksheet,cols) ,
-                                                   consignee=parse_consignee(row,worksheet,cols),)
-                                                   #transporter=parse_transporter(row,worksheet,cols))
+                                                   consignee=parse_consignee(row,worksheet,cols),
+                                                   transporter=parse_transporter(row,worksheet,cols),)
 
 
                 deliveries.append(delivery.waybill)

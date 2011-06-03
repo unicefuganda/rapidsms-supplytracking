@@ -1,7 +1,7 @@
 from django.db import models
 from rapidsms.models import Contact
 from django.db.models.signals import post_save
-from supplytracking.utils import script_creation_handler
+#from supplytracking.utils import script_creation_handler
 
 class Delivery(models.Model):
     waybill =models.CharField(max_length=20,unique=True)
@@ -14,7 +14,7 @@ class Delivery(models.Model):
     def __unicode__(self):
         return '%s'%self.waybill
 
-post_save.connect(script_creation_handler,sender=Delivery)
+#post_save.connect(script_creation_handler,sender=Delivery)
 
 
 

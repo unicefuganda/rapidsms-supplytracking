@@ -1,6 +1,6 @@
 from script.models import *
 from status160.models import Team
-from supplytracking.models import *
+from supplytracking.models import Delivery
 from django.contrib.auth.models import User
 from django.conf import settings
 from xlrd import open_workbook
@@ -28,12 +28,13 @@ def create_scripts():
         retry_offset=3600*24,
         num_tries=100,
         ))
-    reminder_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
-                                         message="you have " + str(Delivery.objects.filter(
-                                                 status='shipped').count()) + "outstanding deliveries")
+    
+    outstanding_delivery_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
+                                         message="you have %s outstanding deliveries"%Delivery.objects.filter(
+                                         status='shipped').count())
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
-        email=reminder_email,
+        email=outstanding_delivery_email,
         order=1,
         rule=ScriptStep.RESEND_MOVEON,
         start_offset=3,
