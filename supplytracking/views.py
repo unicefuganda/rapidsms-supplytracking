@@ -1,7 +1,6 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django import forms
-from django.db.models.signals import post_save
 from django.forms.util import ErrorList
 from django.db import IntegrityError
 
@@ -73,7 +72,8 @@ def handle_excel_file(file):
                                                    date_shipped=parse_date_shipped(row,worksheet,cols) ,
                                                    consignee=parse_consignee(row,worksheet,cols),)
                                                    #transporter=parse_transporter(row,worksheet,cols))
-                post_save.connect(script_creation_handler,sender=delivery)
+
+
                 deliveries.append(delivery.waybill)
             except IntegrityError:
                 pass

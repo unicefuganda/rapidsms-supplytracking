@@ -316,42 +316,7 @@
         }
     },
 
-    {
-        "pk": 1,
-        "model": "supplytracking.delivery",
-        "fields": {
-            "status": "shipped",
-            "date_shipped": "2011-05-30",
-            "waybill": "del001",
-            "consignee": 7442,
-            "date_delivered": null,
-            "transporter": 7438
-        }
-    },
-    {
-        "pk": 2,
-        "model": "supplytracking.delivery",
-        "fields": {
-            "status": "shipped",
-            "date_shipped": "2011-05-30",
-            "waybill": "del002",
-            "consignee": 7442,
-            "date_delivered": null,
-            "transporter": 7439
-        }
-    },
-    {
-        "pk": 3,
-        "model": "supplytracking.delivery",
-        "fields": {
-            "status": "shipped",
-            "date_shipped": "2011-05-30",
-            "waybill": "del003",
-            "consignee": 7442,
-            "date_delivered": null,
-            "transporter": 7438
-        }
-    },
+    
         {
         "pk": 1,
         "model": "auth.user",
@@ -368,5 +333,6 @@
             "password": "",
             "email": "",
             "date_joined": "2010-10-25 00:17:35"
-        }}
+        }
+    }
 ]

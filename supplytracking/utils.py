@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group
 from rapidsms.models import Contact,Connection
 from uganda_common.utils import assign_backend
 
+
 def create_scripts():
     
 
@@ -16,7 +17,8 @@ def create_scripts():
         })
     admin_script = Script.objects.create(slug="hq_supply_staff",name="supply staff script")
     admin_script.sites.add(Site.objects.get_current())
-    reminder_email=Email.objects.create(subject="SupplyTracking: Excel Upload reminder" ,message="You are reminded to upload the deliveries excel script")
+    reminder_email = Email.objects.create(subject="SupplyTracking: Excel Upload reminder",
+                                          message="You are reminded to upload the deliveries excel script")
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=reminder_email,
@@ -26,14 +28,17 @@ def create_scripts():
         retry_offset=3600*24,
         num_tries=100,
         ))
-    reminder_email=Email.objects.create(subject="SupplyTracking: Excel Upload reminder" ,message="you have "+str(Delivery.objects.filter(status='shipped').count())+"deliveries")
+    reminder_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
+                                         message="you have " + str(Delivery.objects.filter(
+                                                 status='shipped').count()) + "outstanding deliveries")
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=reminder_email,
         order=1,
-        rule=ScriptStep.STRICT,
-        start_offset=0,
+        rule=ScriptStep.RESEND_MOVEON,
+        start_offset=3,
         retry_offset=3600*24,
+        num_tries=100, 
         ))
     user = User.objects.get(username="admin")
 
@@ -79,19 +84,23 @@ def create_scripts():
            ))
 
 
-def script_creation_handler(sender, **kwargs):
+def script_creation_handler(sender,instance, **kwargs):
     #create script progress for admins , transporters  and consignees
-    instance = kwargs['instance']
+    #instance = kwargs['instance']
     supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
     for admin in supply_admins:
         scriptprogress=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
                                               connection=admin.connection)[0]
         scriptprogress.moveon()
-
-    ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
+        print scriptprogress
+        print "here by"
+    if instance.transporter:
+        ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
                                           connection=instance.transporter.default_connection)
     ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
                                           connection=instance.consignee.default_connection)
+    return True
+
 def load_consignees(file):
     if  file:
             excel = file.read()
@@ -114,7 +123,7 @@ def load_consignees(file):
                 telephone=str(sheet.cell(row, telephone_col).value)
                 if len(telephone)>0:
                     contact=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))[0]
-                    print 'adding '+ contact.name
+                    #print 'adding '+ contact.name
                     contact.groups.add(consignee)
                     backend=assign_backend(telephone)[1]
                     connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),

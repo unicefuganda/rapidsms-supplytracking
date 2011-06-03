@@ -13,7 +13,7 @@ from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
 from django.db import connection
 from rapidsms.models import Connection,Contact
-from supplytracking.views import UploadForm
+from supplytracking.views import UploadForm, handle_excel_file
 from django.db import connection
 import os
 from supplytracking.views import handle_excel_file
@@ -65,35 +65,43 @@ class ModelTest(TestCase):
         progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
         self.assertEquals(progress[0].step.order, 0)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
+        
         #wait for one day, the script should re-send the reminder to the admins
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
+        
         # no excel upload does not move the script to next step for all admins
         response = check_progress(admins[1].default_connection)
         progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
         self.assertEquals(progress[1].step.order, 0)
+        
+        #upload a sheet and the admins should be moved to next step after a three day time offset
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = UploadForm({},file_dict)
+        self.assertTrue(form.is_valid())
+        msg = handle_excel_file(form.cleaned_data['excel_file'])
+        
+        # a sheet upload waits for time_offset before moving admins to the next step
+        response = check_progress(admins[1].default_connection)
+        progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
+        self.assertEquals(progress[1].step.order, 0)
+        
+        # after 3 days, admins should be moved to the next step
+        self.elapseTime(progress[1], 86401*3)
+        response = check_progress(admins[1].default_connection)
+        progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
+        self.assertEquals(progress[1].step.order, 1)
+        self.assertEquals(response, admin_script.steps.get(order=1).email)
 
-        #a sheet is uploaded  when a new delivery script is created
-        date_shipped = '2011-06-01'
-        delivery = Delivery.objects.create(waybill="del000", date_shipped=date_shipped, consignee=Contact.objects.filter(groups=Group.objects.get(name='consignee'))[0],
-                                           transporter=Contact.objects.filter(groups=Group.objects.get(name='transporter'))[0])
-        post_save.connect(script_creation_handler,sender=delivery)
-        # a script upload moves the admin script to the next step
-        admin1_response = check_progress(admins[1].default_connection)
-#        self.assertEquals(admin1_response, admin_script.steps.get(order=1).email)
-        progress = ScriptProgress.objects.get(connection=admins[1].default_connection)
-        self.assertEquals(progress.step.order, 1)
 
-        #both admins should be on the same step
+        #all admins should be on the same step and all should receive an email of outstanding deliveries
         self.assertEquals(
                 ScriptProgress.objects.filter(script=admin_script, connection=admins[0].default_connection).step,
                 ScriptProgress.objects.filter(script=admin_script, connection=admins[1].default_connection).step)
-
-
-        admin_1_response = check_progress(admins[0].default_connection)
-        self.assertEquals(admin_1_response, admin_script.steps.get(order=1).email)
-        self.assertEquals(admin_2_response, admin_script.steps.get(order=1).email)
+        self.assertEquals(check_progress(admins[0].default_connection), check_progress(admins[0].default_connection))
+        self.assertEquals(check_progress(admins[0].default_connection), admin_script.steps.get(order=1).email)
 
 
 
