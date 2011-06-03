@@ -22,14 +22,15 @@ def create_scripts():
         retry_offset=3600*24,
         num_tries=100,
         ))
-    reminder_email=Email.objects.create(subject="SupplyTracking: Excel Upload reminder" ,message="you have "+str(Delivery.objects.filter(status='shipped').count())+"deliveries")
+    reminder_email=Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder" ,message="you have "+str(Delivery.objects.filter(status='shipped').count())+"outstanding deliveries")
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=reminder_email,
         order=1,
-        rule=ScriptStep.STRICT,
-        start_offset=0,
+        rule=ScriptStep.RESEND_MOVEON,
+        start_offset=3,
         retry_offset=3600*24,
+        num_tries=100, 
         ))
     user = User.objects.get(username="admin")
 
