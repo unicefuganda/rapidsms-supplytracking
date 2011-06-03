@@ -1,5 +1,4 @@
 from script.models import *
-from status160.models import Team
 from supplytracking.models import *
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -84,22 +83,7 @@ def create_scripts():
            ))
 
 
-def script_creation_handler(sender,instance, **kwargs):
-    #create script progress for admins , transporters  and consignees
-    #instance = kwargs['instance']
-    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
-    for admin in supply_admins:
-        scriptprogress=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
-                                              connection=admin.connection)[0]
-        scriptprogress.moveon()
-        print scriptprogress
-        print "here by"
-    if instance.transporter:
-        ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
-                                          connection=instance.transporter.default_connection)
-    ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
-                                          connection=instance.consignee.default_connection)
-    return True
+
 
 def load_consignees(file):
     if  file:
