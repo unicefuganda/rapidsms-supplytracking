@@ -3,6 +3,11 @@ from status160.models import Team
 from supplytracking.models import *
 from django.contrib.auth.models import User
 from django.conf import settings
+from xlrd import open_workbook
+from django.contrib.auth.models import Group
+from rapidsms.models import Contact,Connection
+from uganda_common.utils import assign_backend
+
 
 def create_scripts():
     
@@ -12,7 +17,8 @@ def create_scripts():
         })
     admin_script = Script.objects.create(slug="hq_supply_staff",name="supply staff script")
     admin_script.sites.add(Site.objects.get_current())
-    reminder_email=Email.objects.create(subject="SupplyTracking: Excel Upload reminder" ,message="You are reminded to upload the deliveries excel script")
+    reminder_email = Email.objects.create(subject="SupplyTracking: Excel Upload reminder",
+                                          message="You are reminded to upload the deliveries excel script")
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=reminder_email,
@@ -22,7 +28,9 @@ def create_scripts():
         retry_offset=3600*24,
         num_tries=100,
         ))
-    reminder_email=Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder" ,message="you have "+str(Delivery.objects.filter(status='shipped').count())+"outstanding deliveries")
+    reminder_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
+                                         message="you have " + str(Delivery.objects.filter(
+                                                 status='shipped').count()) + "outstanding deliveries")
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=reminder_email,
@@ -77,18 +85,52 @@ def create_scripts():
            ))
 
 
-def script_creation_handler(sender, **kwargs):
+def script_creation_handler(sender,instance, **kwargs):
     #create script progress for admins , transporters  and consignees
-    instance = kwargs['instance']
-    supply_admins=Contact.objects.filter(group=Team.objects.get(name="supply_admins"))
+    #instance = kwargs['instance']
+    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
     for admin in supply_admins:
-        ScriptProgress.objects.create(script=Script.objects.get(slug="hq_supply_staff"),
-                                              connection=instance.connection)
-    ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
+        scriptprogress=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
+                                              connection=admin.connection)[0]
+        scriptprogress.moveon()
+        print scriptprogress
+        print "here by"
+    if instance.transporter:
+        ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
                                           connection=instance.transporter.default_connection)
     ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
                                           connection=instance.consignee.default_connection)
+    return True
 
+def load_consignees(file):
+    if  file:
+            excel = file.read()
+            workbook = open_workbook(file_contents=excel)
+            sheet = workbook.sheet_by_index(0)
+            #iterate over the first row
+            #and get the cell containing waybills
+            name_col = ''
+            telephone_col = ''
+
+            for col in range(sheet.ncols):
+                value = sheet.cell(0, col).value
+                if value.find("Company Name") >= 0:
+                    name_col = col
+                if value.find("Telephone") >= 0:
+                    telephone_col = col
+
+            consignee=Group.objects.get_or_create(name='consignee')[0]
+            for row in range(sheet.nrows)[1:]:
+                telephone=str(sheet.cell(row, telephone_col).value)
+                if len(telephone)>0:
+                    contact=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))[0]
+                    #print 'adding '+ contact.name
+                    contact.groups.add(consignee)
+                    backend=assign_backend(telephone)[1]
+                    connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),
+                                                                       backend=backend)
+                    connection.contact=contact
+                    connection.save()
 
 
 
