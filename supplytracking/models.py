@@ -1,7 +1,9 @@
 from django.db import models
 from rapidsms.models import Contact
 from django.db.models.signals import post_save
-#from supplytracking.utils import script_creation_handler
+from script.models import ScriptProgress,Script
+from django.contrib.auth.models import Group
+from rapidsms.models import Contact
 
 class Delivery(models.Model):
     waybill =models.CharField(max_length=20,unique=True)
@@ -14,7 +16,22 @@ class Delivery(models.Model):
     def __unicode__(self):
         return '%s'%self.waybill
 
-#post_save.connect(script_creation_handler,sender=Delivery)
+def script_creation_handler(sender,instance, **kwargs):
+    #create script progress for admins , transporters  and consignees
+    #instance = kwargs['instance']
+    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
+    for admin in supply_admins:
+        scriptprogress=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
+                                              connection=admin.connection)[0]
+        scriptprogress.moveon()
+    if instance.transporter:
+        ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
+                                          connection=instance.transporter.default_connection)
+    ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
+                                          connection=instance.consignee.default_connection)
+    return True
+
+post_save.connect(script_creation_handler,sender=Delivery)
 
 
 
