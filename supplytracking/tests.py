@@ -57,15 +57,17 @@ class ModelTest(TestCase):
         for admin in admins:
             progress.append(ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script))
         response = check_progress(admins[0].default_connection)
+        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
+        self.assertEquals(progress[0].step.order, 0)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
+        #wait for one day, the script should re-send the reminder to the admins
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
-        
         # no excel upload does not move the script to next step for all admins
-        admin1_response = check_progress(admins[1].default_connection)
-        progress = ScriptProgress.objects.get(connection=admins[1].default_connection)
-        self.assertEquals(progress.step.order, 0)
+        response = check_progress(admins[1].default_connection)
+        progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
+        self.assertEquals(progress[1].step.order, 0)
 
         #a sheet is uploaded  when a new delivery script is created
         date_shipped = '2011-06-01'
