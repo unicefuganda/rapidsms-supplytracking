@@ -2,26 +2,31 @@ from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
 
 from script.utils.incoming import incoming_progress
 from script.utils.outgoing import check_progress
 from script.models import *
 from supplytracking.models import *
-from supplytracking.utils import create_scripts
+from supplytracking.utils import create_scripts,load_consignees
 from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
 from rapidsms.models import Connection,Contact
 from supplytracking.views import UploadForm
 from django.db import connection
 import os
+from supplytracking.views import handle_excel_file
 
 
 
 class ModelTest(TestCase):
 
-     #fixtures = ['test_supplytracking.json']
+     #fixtures = ['fixtures/test_supplytracking.json']
      def setUp(self):
          create_scripts()
+         consignee_file=open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'consignees.xls'),'rb')
+         load_consignees(consignee_file)
+
 
 
      def fakeIncoming(self, message, connection=None):
@@ -128,7 +133,7 @@ class ModelTest(TestCase):
      def testExcelImport(self):
         upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
         file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
-        form = UploadForm(file_dict)
+        form = UploadForm({},file_dict)
         self.assertTrue(form.is_valid())
         #test Delivery object creation
         
