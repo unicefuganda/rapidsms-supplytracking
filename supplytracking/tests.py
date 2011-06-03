@@ -2,13 +2,13 @@ from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.management import call_command
+from django.db.models.signals import post_save
 
 from script.utils.incoming import incoming_progress
 from script.utils.outgoing import check_progress
 from script.models import *
 from supplytracking.models import *
-from supplytracking.utils import create_scripts,load_consignees
+from supplytracking.utils import create_scripts,load_consignees,script_creation_handler
 from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
 from django.db import connection
@@ -57,7 +57,7 @@ class ModelTest(TestCase):
      def testAdminScript(self):
 
         admin_script = Script.objects.get(slug='hq_supply_staff')
-        admins = Contact.objects.filter(groups=Group.objects.get(name='supply_admin'))
+        admins = Contact.objects.filter(groups=Group.objects.filter(name='supply_admin'))
         progress = []
         for admin in admins:
             progress.append(ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script))
@@ -78,7 +78,7 @@ class ModelTest(TestCase):
         date_shipped = '2011-06-01'
         delivery = Delivery.objects.create(waybill="del000", date_shipped=date_shipped, consignee=Contact.objects.filter(groups=Group.objects.get(name='consignee'))[0],
                                            transporter=Contact.objects.filter(groups=Group.objects.get(name='transporter'))[0])
-
+        post_save.connect(script_creation_handler,sender=delivery)
         # a script upload moves the admin script to the next step
         admin1_response = check_progress(admins[1].default_connection)
 #        self.assertEquals(admin1_response, admin_script.steps.get(order=1).email)

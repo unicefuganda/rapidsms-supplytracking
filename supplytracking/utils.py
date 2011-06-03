@@ -82,10 +82,12 @@ def create_scripts():
 def script_creation_handler(sender, **kwargs):
     #create script progress for admins , transporters  and consignees
     instance = kwargs['instance']
-    supply_admins=Contact.objects.filter(group=Team.objects.get(name="supply_admins"))
+    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
     for admin in supply_admins:
-        ScriptProgress.objects.create(script=Script.objects.get(slug="hq_supply_staff"),
-                                              connection=instance.connection)
+        scriptprogress=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
+                                              connection=admin.connection)[0]
+        scriptprogress.moveon()
+
     ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
                                           connection=instance.transporter.default_connection)
     ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
