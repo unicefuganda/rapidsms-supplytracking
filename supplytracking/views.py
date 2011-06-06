@@ -7,7 +7,6 @@ from django.db import IntegrityError
 from xlrd import open_workbook
 from uganda_common.utils import assign_backend
 import dateutil
-from supplytracking.utils import script_creation_handler
 from supplytracking.models import *
 import datetime
 from script.models import *
@@ -41,16 +40,13 @@ def parse_waybill(row,worksheet,cols):
     return worksheet.cell(row, cols['waybill']).value
 
 def parse_transporter(row,worksheet,cols):
-    try:
-        return Contact.objects.get(name__icontains=worksheet.cell(row, cols['transporter']).value)
-    except:
-        return None
+    return Contact.objects.filter(name__icontains = worksheet.cell(row, cols['transporter']).value)[0]
 
 def parse_status(row,worksheet,cols):
     return worksheet.cell(row, cols['status']).value
 
 def parse_consignee(row,worksheet,cols):
-    return Contact.objects.get(name__icontains=(worksheet.cell(row, cols['consignee']).value))
+    return Contact.objects.filter(name__icontains = worksheet.cell(row, cols['consignee']).value)[0]
 
 def parse_date_shipped(row,worksheet,cols):
     try:

@@ -87,7 +87,7 @@ def create_scripts():
 
 
 
-def load_consignees(file):
+def load_excel_file(file, group_name):
     if  file:
             excel = file.read()
             workbook = open_workbook(file_contents=excel)
@@ -104,13 +104,13 @@ def load_consignees(file):
                 if value.find("Telephone") >= 0:
                     telephone_col = col
 
-            consignee=Group.objects.get_or_create(name='consignee')[0]
+            group=Group.objects.get_or_create(name=group_name)[0]
             for row in range(sheet.nrows)[1:]:
                 telephone=str(sheet.cell(row, telephone_col).value)
                 if len(telephone)>0:
                     contact=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))[0]
                     #print 'adding '+ contact.name
-                    contact.groups.add(consignee)
+                    contact.groups.add(group)
                     backend=assign_backend(telephone)[1]
                     connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),
                                                                        backend=backend)
