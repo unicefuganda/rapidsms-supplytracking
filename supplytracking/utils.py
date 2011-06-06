@@ -115,15 +115,9 @@ def load_excel_file(file, group_name):
                         contact.groups.add(group)
                     backend=assign_backend(telephone)[1]
                     connection,connection_created=Connection.objects.get_or_create(identity=str(sheet.cell(row, telephone_col)),backend=backend)
-<<<<<<< HEAD
-                    connection.contact=contact
-                    connection.save()
-=======
-
                     if connection_created:
                         connection.contact=contact
                         connection.save()
->>>>>>> 1be60bfb3c97ea76414fecc3d58c72b4a948c37f
 
 
 
