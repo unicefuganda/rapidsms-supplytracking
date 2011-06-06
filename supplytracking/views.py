@@ -88,7 +88,6 @@ def handle_excel_file(file):
         for row in range(worksheet.nrows)[1:]:
 
             try:
-
                 #check if delivery exists
                 d=Delivery.objects.get(waybill=parse_waybill(row,worksheet,cols))
                 duplicates.append(d.waybill)

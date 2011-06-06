@@ -104,7 +104,15 @@ class ModelTest(TestCase):
         self.assertEquals(check_progress(admins[0].default_connection), admin_script.steps.get(order=1).email)
 
      def testTransporterScript(self):
-        delivery=Delivery.objects.get(waybill="del001")
+         #upload excel, this should result into creation of a delivery
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = UploadForm({},file_dict)
+        self.assertTrue(form.is_valid())
+        msg = handle_excel_file(form.cleaned_data['excel_file'])
+        
+        delivery=Delivery.objects.all()[0]
+        print delivery.transporter
         transporter_script=Script.objects.get(slug='transporter')
         transporter_connection = Contact.objects.get(name=delivery.transporter).default_connection
         progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)

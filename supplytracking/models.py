@@ -5,7 +5,6 @@ from script.models import ScriptProgress,Script
 from django.contrib.auth.models import Group
 from rapidsms.models import Contact
 
-
 class Delivery(models.Model):
     waybill =models.CharField(max_length=20,unique=True)
     consignee=models.ForeignKey(Contact,related_name='consignee',null=True)
