@@ -104,16 +104,17 @@ def load_excel_file(file, group_name):
                 if value.find("Telephone") >= 0:
                     telephone_col = col
 
-            group=Group.objects.get_or_create(name=group_name)[0]
+            group, group_created = Group.objects.get_or_create(name=group_name)
+#            consignee,consignee_created=Group.objects.get_or_create(name='consignee')
             for row in range(sheet.nrows)[1:]:
                 telephone=str(sheet.cell(row, telephone_col).value)
                 if len(telephone)>0:
-                    contact=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))[0]
+                    contact,contact_created=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))
                     #print 'adding '+ contact.name
-                    contact.groups.add(group)
+                    if contact_created:
+                        contact.groups.add(group)
                     backend=assign_backend(telephone)[1]
-                    connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),
-                                                                       backend=backend)
+                    connection,connection_created=Connection.objects.get_or_create(identity=str(sheet.cell(row, telephone_col)),backend=backend)
                     connection.contact=contact
                     connection.save()
 

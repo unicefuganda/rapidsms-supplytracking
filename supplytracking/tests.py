@@ -8,7 +8,7 @@ from script.utils.incoming import incoming_progress
 from script.utils.outgoing import check_progress
 from script.models import *
 from supplytracking.models import *
-from supplytracking.utils import create_scripts,load_consignees,script_creation_handler
+from supplytracking.utils import create_scripts,load_excel_file
 from supplytracking.views import UploadForm
 from django.contrib.auth.models import Group
 from django.db import connection
@@ -26,7 +26,9 @@ class ModelTest(TestCase):
      def setUp(self):
          create_scripts()
          consignee_file=open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'consignees.xls'),'rb')
-         load_consignees(consignee_file)
+         load_excel_file(consignee_file, 'consignee')
+         transporter_file=open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'transporters.xls'),'rb')
+         load_excel_file(transporter_file, 'transporter')
 
 
 
