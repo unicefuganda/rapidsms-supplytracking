@@ -103,18 +103,19 @@ def load_consignees(file):
                 if value.find("Telephone") >= 0:
                     telephone_col = col
 
-            consignee=Group.objects.get_or_create(name='consignee')[0]
+            consignee,consignee_created=Group.objects.get_or_create(name='consignee')
             for row in range(sheet.nrows)[1:]:
                 telephone=str(sheet.cell(row, telephone_col).value)
                 if len(telephone)>0:
-                    contact=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))[0]
+                    contact,contact_created=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))
                     #print 'adding '+ contact.name
-                    contact.groups.add(consignee)
+                    if contact_created:
+                        contact.groups.add(consignee)
                     backend=assign_backend(telephone)[1]
-                    connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),
-                                                                       backend=backend)
-                    connection.contact=contact
-                    connection.save()
+                    connection,connection_created=Connection.objects.get_or_create(identity=str(sheet.cell(row, telephone_col)),
+                    if connection_created:                                                    backend=backend)
+                        connection.contact=contact
+                        connection.save()
 
 
 

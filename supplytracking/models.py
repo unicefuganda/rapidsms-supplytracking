@@ -22,14 +22,17 @@ def script_creation_handler(sender,instance, **kwargs):
     #instance = kwargs['instance']
     supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
     for admin in supply_admins:
-        scriptprogress=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
-                                              connection=admin.connection)[0]
-        scriptprogress.moveon()
+        scriptprogress,progress_created=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
+                                              connection=admin.connection)
+        scriptprogress.start()
     if instance.transporter:
-        ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
+        transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
                                           connection=instance.transporter.default_connection)
-    ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
+        transporter_progress.start()
+    consignee_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
                                           connection=instance.consignee.default_connection)
+    consignee_progress.start()
+
     return True
 
 post_save.connect(script_creation_handler,sender=Delivery)

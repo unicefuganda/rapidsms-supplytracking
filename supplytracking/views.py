@@ -7,7 +7,7 @@ from django.db import IntegrityError
 from xlrd import open_workbook
 from uganda_common.utils import assign_backend
 import dateutil
-from supplytracking.utils import script_creation_handler
+from supplytracking.utils import script_creation_handler,load_consignees
 from supplytracking.models import *
 import datetime
 from script.models import *
@@ -17,13 +17,22 @@ class UploadForm(forms.Form):
                                     label='No delivery', required=False)
     excel_file = forms.FileField(label="Excel File",required=False)
     def clean(self):
-        excel = self.cleaned_data['excel_file']
-        if excel.name.rsplit('.')[1] != 'xls':
+        excel = self.cleaned_data.get('excel_file',None)
+        if excel and excel.name.rsplit('.')[1] != 'xls':
                 msg=u'Upload valid excel file !!!'
                 self._errors["excel_file"]=ErrorList([msg])
                 return ''
         return self.cleaned_data
 
+class ConsigneeForm(forms.Form):
+    consignee_file = forms.FileField(label="Consignees Excel File",required=False)
+    def clean(self):
+        excel = self.cleaned_data.get('consignee_file',None)
+        if excel and excel.name.rsplit('.')[1] != 'xls':
+                msg=u'Upload valid excel file !!!'
+                self._errors["consignee_file"]=ErrorList([msg])
+                return ''
+        return self.cleaned_data
 
 def parse_header_row(worksheet):
     fields=['transporter','waybill','consignee','date_shipped','status']
@@ -42,7 +51,16 @@ def parse_waybill(row,worksheet,cols):
 
 def parse_transporter(row,worksheet,cols):
     try:
-        return Contact.objects.get(name__icontains=worksheet.cell(row, cols['transporter']).value)
+        contact,contact_created=Contact.objects.get_or_create(name=str(worksheet.cell(row, cols['transporter']).value))
+        if contact_created:
+            transporter,transporter_created=Group.objects.get_or_create(name='transporter')
+            contact.groups.add(transporter)
+            backend=assign_backend(telephone)[1]
+            connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),
+                                                                    backend=backend)
+            connection.contact=contact
+            connection.save()
+        return contact
     except:
         return None
 
@@ -66,19 +84,28 @@ def handle_excel_file(file):
         worksheet = workbook.sheet_by_index(0)
         cols=parse_header_row(worksheet)
         deliveries=[]
+        duplicates=[]
         for row in range(worksheet.nrows)[1:]:
+
             try:
+
+                #check if delivery exists
+                d=Delivery.objects.get(waybill=parse_waybill(row,worksheet,cols))
+                duplicates.append(d.waybill)
+
+            except Delivery.DoesNotExist:
                 delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
-                                                   date_shipped=parse_date_shipped(row,worksheet,cols) ,
-                                                   consignee=parse_consignee(row,worksheet,cols),)
-                                                   #transporter=parse_transporter(row,worksheet,cols))
-
-
+                                                       date_shipped=parse_date_shipped(row,worksheet,cols) ,
+                                                       consignee=parse_consignee(row,worksheet,cols),
+                                                       transporter=parse_transporter(row,worksheet,cols))
                 deliveries.append(delivery.waybill)
-            except IntegrityError:
-                pass
-
-        return 'deliveries with waybills ' +' ,'.join(deliveries) + " have been uploaded !"
+                continue
+        if len(deliveries)>0:
+            return 'deliveries with waybills ' +' ,'.join(deliveries) + " have been uploaded !\n"
+        elif len(duplicates )>0:
+            return "it seems you have uploaded a duplicate excel file !!!"
+        else:
+            return "you seem to have uploaded an empty excel file..."
     else:
         return "Invalid file"
 
@@ -86,19 +113,20 @@ def handle_excel_file(file):
 
 def index(request):
     if request.method == 'POST':
-        form = UploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            if form.cleaned_data.get('nodelivery', False):
+        deliveryform = UploadForm(request.POST, request.FILES)
+        consigneeform=ConsigneeForm(request.POST, request.FILES)
+        if deliveryform.is_valid() or consigneeform.is_valid():
+            if deliveryform.is_valid() and deliveryform.cleaned_data.get('nodelivery', False):
                 ##increase the script session for admin retry by 1 day
                 admins=ScriptSession.objects.all()
             else:
 
-                message= handle_excel_file(request.FILES['excel_file'])
-                return render_to_response('supplytracking/index.html', {'form':form,'message':message}, context_instance=RequestContext(request))
+                if deliveryform.is_valid() and request.FILES.get('excel_file',None):
+                    message= handle_excel_file(request.FILES['excel_file'])
+                if consigneeform.is_valid() and request.FILES.get('consignee_file',None):
+                    message= load_consignees(request.FILES['consignee_file'])
+                return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'consigneeform':consigneeform,'message':message}, context_instance=RequestContext(request))
 
-        else:
-            form = UploadForm()
-
-
-    form = UploadForm()
-    return render_to_response('supplytracking/index.html', {'form':form}, context_instance=RequestContext(request))
+    deliveryform = UploadForm()
+    consigneeform=ConsigneeForm()
+    return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'consigneeform':consigneeform}, context_instance=RequestContext(request))
