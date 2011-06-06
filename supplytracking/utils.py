@@ -113,8 +113,9 @@ def load_consignees(file):
                     if contact_created:
                         contact.groups.add(consignee)
                     backend=assign_backend(telephone)[1]
-                    connection,connection_created=Connection.objects.get_or_create(identity=str(sheet.cell(row, telephone_col)),
-                    if connection_created:                                                    backend=backend)
+                    connection,connection_created=Connection.objects.get_or_create(identity=str(sheet.cell(row, telephone_col)),backend=backend)
+
+                    if connection_created:
                         connection.contact=contact
                         connection.save()
 
