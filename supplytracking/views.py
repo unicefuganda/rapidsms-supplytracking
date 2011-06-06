@@ -51,7 +51,7 @@ def parse_waybill(row,worksheet,cols):
 
 def parse_transporter(row,worksheet,cols):
     try:
-        contact,contact_created=Contact.objects.get_or_create(name=str(worksheet.cell(row, cols['transporter']).value))
+        contact,contact_created=Contact.objects.get_or_create(name=str(worksheet.cell(row, cols['transporter']).value).lower())
         if contact_created:
             transporter,transporter_created=Group.objects.get_or_create(name='transporter')
             contact.groups.add(transporter)
