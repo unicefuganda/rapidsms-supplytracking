@@ -7,7 +7,7 @@ from django.db import IntegrityError
 from xlrd import open_workbook
 from uganda_common.utils import assign_backend
 import dateutil
-from supplytracking.utils import script_creation_handler,load_consignees
+from supplytracking.utils import load_consignees
 from supplytracking.models import *
 import datetime
 from script.models import *
