@@ -21,4 +21,14 @@
 </form>
 </table>
         </div>
+
+<div class="module">
+    <h3>Upload Transporter Excel File</h3>
+<table>
+<form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
+{{transporterform.as_table}}
+<tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
+</form>
+</table>
+        </div>
 {% endblock %}

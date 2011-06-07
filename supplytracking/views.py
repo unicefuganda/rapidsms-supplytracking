@@ -33,6 +33,15 @@ class ConsigneeForm(forms.Form):
                 self._errors["consignee_file"]=ErrorList([msg])
                 return ''
         return self.cleaned_data
+class TransporterForm(forms.Form):
+    transporter_file = forms.FileField(label="Transporters Excel File",required=False)
+    def clean(self):
+        excel = self.cleaned_data.get('transporter_file',None)
+        if excel and excel.name.rsplit('.')[1] != 'xls':
+                msg=u'Upload valid excel file !!!'
+                self._errors["transporter_file"]=ErrorList([msg])
+                return ''
+        return self.cleaned_data
 
 def parse_header_row(worksheet):
     fields=['transporter','waybill','consignee','date_shipped','status']
@@ -47,7 +56,7 @@ def parse_header_row(worksheet):
 
 
 def parse_waybill(row,worksheet,cols):
-    return worksheet.cell(row, cols['waybill']).value
+    return str(worksheet.cell(row, cols['waybill']).value).lower()
 
 def parse_transporter(row,worksheet,cols):
     try:
@@ -65,14 +74,14 @@ def parse_transporter(row,worksheet,cols):
         return None
 
 def parse_status(row,worksheet,cols):
-    return worksheet.cell(row, cols['status']).value
+    return str(worksheet.cell(row, cols['status']).value)
 
 def parse_consignee(row,worksheet,cols):
-    return Contact.objects.filter(name__icontains = worksheet.cell(row, cols['consignee']).value)[0]
+    return Contact.objects.filter(name__icontains = str(worksheet.cell(row, cols['consignee']).value).lower())[0]
 
 def parse_date_shipped(row,worksheet,cols):
     try:
-        date=dateutil.parser.parse(worksheet.cell(row, cols['date_shipped']).value)
+        date=dateutil.parser.parse(str(worksheet.cell(row, cols['date_shipped']).value).lower())
     except:
         date=datetime.datetime.now()
     return date
@@ -114,18 +123,22 @@ def index(request):
     if request.method == 'POST':
         deliveryform = UploadForm(request.POST, request.FILES)
         consigneeform=ConsigneeForm(request.POST, request.FILES)
-        if deliveryform.is_valid() or consigneeform.is_valid():
+        transporterform=TransporterForm(request.POST, request.FILES)
+        if deliveryform.is_valid() or consigneeform.is_valid() or transporterform.is_valid():
             if deliveryform.is_valid() and deliveryform.cleaned_data.get('nodelivery', False):
                 ##increase the script session for admin retry by 1 day
-                admins=ScriptSession.objects.all()
+                pass
             else:
 
                 if deliveryform.is_valid() and request.FILES.get('excel_file',None):
                     message= handle_excel_file(request.FILES['excel_file'])
                 if consigneeform.is_valid() and request.FILES.get('consignee_file',None):
                     message= load_excel_file(request.FILES['consignee_file'], 'consignee')
-                return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'consigneeform':consigneeform,'message':message}, context_instance=RequestContext(request))
+                if transporterform.is_valid() and request.FILES.get('transporter_file',None):
+                    message= load_excel_file(request.FILES['transporter_file'], 'transporter')
+                return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'transporterform':transporterform,'consigneeform':consigneeform,'message':message}, context_instance=RequestContext(request))
 
     deliveryform = UploadForm()
     consigneeform=ConsigneeForm()
-    return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'consigneeform':consigneeform}, context_instance=RequestContext(request))
+    transporterform=TransporterForm()
+    return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'transporterform':transporterform,'consigneeform':consigneeform}, context_instance=RequestContext(request))

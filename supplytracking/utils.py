@@ -30,7 +30,7 @@ def create_scripts():
     
     outstanding_delivery_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
                                          message="you have %s outstanding deliveries"%Delivery.objects.filter(
-                                         status='shipped').count())
+                                         status=Delivery.shipped_status).count())
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=outstanding_delivery_email,

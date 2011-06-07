@@ -5,11 +5,14 @@ from script.models import ScriptProgress,Script
 from django.contrib.auth.models import Group
 from rapidsms.models import Contact
 
+
 class Delivery(models.Model):
+    delivered_status=1
+    shipped_status=0
     waybill =models.CharField(max_length=20,unique=True)
     consignee=models.ForeignKey(Contact,related_name='consignee',null=True)
     transporter=models.ForeignKey(Contact,blank=True,related_name='transporter',null=True)
-    status=models.CharField(max_length=22,choices=(('shipped','shipped'),('delivered','delivered'),))
+    status=models.IntegerField(max_length=1,choices=((shipped_status,'shipped'),(delivered_status,'delivered'),))
     date_shipped=models.DateField()
     date_delivered=models.DateField(null=True,blank=True)
 
