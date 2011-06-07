@@ -109,7 +109,7 @@ def load_excel_file(file, group_name):
             for row in range(sheet.nrows)[1:]:
                 telephone=str(sheet.cell(row, telephone_col).value)
                 if len(telephone)>0:
-                    contact,contact_created=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value))
+                    contact,contact_created=Contact.objects.get_or_create(name=str(sheet.cell(row, name_col).value).lower())
                     #print 'adding '+ contact.name
                     if contact_created:
                         contact.groups.add(group)
