@@ -145,15 +145,18 @@ class ModelTest(TestCase):
         #transporter has different shipments in shipped status
         self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 4)
         
-        delivery=Delivery.objects.all()[0]
+        #transporter does not advance to step 0 before the start_offset time has expired
         transporter_script=Script.objects.get(slug='transporter')
-        transporter_connection = Contact.objects.get(name=delivery.transporter).default_connection
+        transporter_connection = Contact.objects.get(name='3ways shipping').default_connection
         progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)
         response = check_progress(transporter_connection)
         self.assertEquals(progress.step, None)
         self.assertEquals(response, None)
-        #wait 3 days
+        
+        #elapse 3 days
         self.elapseTime(progress, 259201)
+        
+        #transporter should advance to step 0 of transporter script for deliveries uploaded 3 or more days ago
         response = check_progress(transporter_connection)
         progress = ScriptProgress.objects.get(connection=transporter_connection, script=transporter_script)
         self.assertEquals(progress.step.order, 0)
@@ -170,13 +173,50 @@ class ModelTest(TestCase):
         self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='P')).count(), 3)
 
      def testConsigneeScript(self):
-        delivery=Delivery.objects.get(waybill="del001")
+        #upload excel, this should result into creation of a delivery
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = UploadForm({},file_dict)
+        self.assertTrue(form.is_valid())
+        msg = handle_excel_file(form.cleaned_data['excel_file'])
+        
+        #wait one day and upload another excel
+        self.elapseTime(progress[0], 86401)
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel2.xls'), 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = UploadForm({},file_dict)
+        self.assertTrue(form.is_valid())
+        msg = handle_excel_file(form.cleaned_data['excel_file'])
+        
+        #consignee has different shipments in shipped status
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='S')).count(), 2)
+        
+        #consignee has not yet advanced into the script (step 0)
         consignee_script=Script.objects.get(slug='consignee')
-        consignee_connection = Contact.objects.get(name=delivery.consignee).default_connection
+        consignee_connection = Contact.objects.get(name='action against hunger').default_connection
         progress = ScriptProgress.objects.create(connection=consignee_connection, script=consignee_script)
         response = check_progress(consignee_connection)
-        self.assertEquals(response, consignee_script.steps.get(order=0).message)
-
+        self.assertEquals(progress.step, None)
+        self.assertEquals(response, None)
+        
+        #elapse 3 days
+        self.elapseTime(progress, 259201)
+        
+        #consignee should advance to step 0 of consignee script for deliveries uploaded 3 more days ago
+        response = check_progress(consignee_connection)
+        progress = ScriptProgress.objects.get(connection=consignee_connection, script=consignee_script)
+        self.assertEquals(progress.step.order, 0)
+        self.assertEquals(response, 'Has the consignment been delivered?')
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='S')).count(), 1)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='P')).count(), 1)
+        
+        #consignee sending in a delivery message should complete the script for transporter and consignee and mark orders as delivered
+        incomingmessage = self.fakeIncoming('KP/WB11/00034 Delivered')
+        response_message = incoming_progress(incomingmessage)
+        self.assertEquals(response_message, "Thanks for your response")
+        progress = ScriptProgress.objects.get(connection=consignee_connection, script=consignee_script)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='D')).count(), 2)
+        
 #     def testFulldeliveryScript(self):
 #        admin_script = Script.objects.get(slug='hq_supply_staff')
 #        admins = Contact.objects.filter(groups=Group.objects.get(name='supply_admin'))
