@@ -37,7 +37,7 @@ def script_creation_handler(sender,instance, **kwargs):
 
     return True
 
-post_save.connect(script_creation_handler,sender=Delivery)
+#post_save.connect(script_creation_handler,sender=Delivery)
 
 
 
