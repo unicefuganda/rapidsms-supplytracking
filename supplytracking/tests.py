@@ -95,8 +95,8 @@ class ModelTest(TestCase):
         #delivery objects increase for different transporters and consignees
         self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger')).count(), 2)
         self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping')).count(), 4)
-        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[0].status, 'shipped')
-        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[1].status, 'shipped')
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[0].status, 'S')
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[1].status, 'S')
         
         #still we have not moved into any script steps
         response = check_progress(admins[0].default_connection)
@@ -109,7 +109,7 @@ class ModelTest(TestCase):
         progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
         self.assertEquals(progress[0].step.order, 0)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
-        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='pending')).count(), 1)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='P')).count(), 1)
         
         # after 1 more day
         self.elapseTime(progress[0], 86401)
@@ -117,7 +117,7 @@ class ModelTest(TestCase):
         progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
         self.assertEquals(progress[0].step.order, 0)
         self.assertEquals(response, admin_script.steps.get(order=0).email)
-        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='pending')).count(), 2)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='P')).count(), 2)
         
         #all admins should be on the same step and all should receive an email of outstanding deliveries
         self.assertEquals(
