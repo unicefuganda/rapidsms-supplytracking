@@ -134,8 +134,18 @@ class ModelTest(TestCase):
         self.assertTrue(form.is_valid())
         msg = handle_excel_file(form.cleaned_data['excel_file'])
         
+        #wait one day and upload another excel
+        self.elapseTime(progress[0], 86401)
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel2.xls'), 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = UploadForm({},file_dict)
+        self.assertTrue(form.is_valid())
+        msg = handle_excel_file(form.cleaned_data['excel_file'])
+        
+        #transporter has different shipments in shipped status
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 4)
+        
         delivery=Delivery.objects.all()[0]
-        print delivery.transporter
         transporter_script=Script.objects.get(slug='transporter')
         transporter_connection = Contact.objects.get(name=delivery.transporter).default_connection
         progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)
@@ -145,11 +155,19 @@ class ModelTest(TestCase):
         #wait 3 days
         self.elapseTime(progress, 259201)
         response = check_progress(transporter_connection)
-        progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)
+        progress = ScriptProgress.objects.get(connection=transporter_connection, script=transporter_script)
         self.assertEquals(progress.step.order, 0)
         self.assertEquals(response, 'Has the consignment been delivered?')
-
-
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 1)
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='P')).count(), 3)
+        
+        #transporter sending delivery message does not affect delivery status
+        incomingmessage = self.fakeIncoming('KP/WB11/00034 Delivered')
+        response_message = incoming_progress(incomingmessage)
+        self.assertEquals(response_message, "Thanks for your response")
+        progress = ScriptProgress.objects.get(connection=transporter_connection, script=transporter_script)
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 1)
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='P')).count(), 3)
 
      def testConsigneeScript(self):
         delivery=Delivery.objects.get(waybill="del001")

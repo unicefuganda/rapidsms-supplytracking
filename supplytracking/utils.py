@@ -36,12 +36,14 @@ def create_scripts():
         email=outstanding_delivery_email,
         order=0,
         rule=ScriptStep.RESEND_MOVEON,
-        start_offset=3,
+        start_offset=3600*24*3,
         retry_offset=3600*24,
         num_tries=100, 
         ))
+    
+    ### transporter script ####
+    
     user = User.objects.get(username="admin")
-
     transporter_script = Script.objects.create(
            slug="transporter",
            name="transporter script"
