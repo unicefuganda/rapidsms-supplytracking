@@ -11,6 +11,7 @@ from supplytracking.utils import load_excel_file
 from supplytracking.models import *
 import datetime
 from script.models import *
+from rapidsms_httprouter.router import get_router
 
 class UploadForm(forms.Form):
     nodelivery = forms.BooleanField(widget=forms.CheckboxInput(),
@@ -106,7 +107,12 @@ def handle_excel_file(file):
                                                        date_shipped=parse_date_shipped(row,worksheet,cols) ,
                                                        consignee=parse_consignee(row,worksheet,cols),
                                                        transporter=parse_transporter(row,worksheet,cols))
+                router=get_router()
+                if consignee:
+                    router.add_outgoing(conignee.default_connection,"consignment" + str(delivary.waybill)+ "has been  sent ! ")
+                
                 deliveries.append(delivery.waybill)
+                
                 continue
         if len(deliveries)>0:
             return 'deliveries with waybills ' +' ,'.join(deliveries) + " have been uploaded !\n"
