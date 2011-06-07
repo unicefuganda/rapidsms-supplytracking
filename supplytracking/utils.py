@@ -16,17 +16,17 @@ def create_scripts():
         })
     admin_script = Script.objects.create(slug="hq_supply_staff",name="supply staff script")
     admin_script.sites.add(Site.objects.get_current())
-    reminder_email = Email.objects.create(subject="SupplyTracking: Excel Upload reminder",
-                                          message="You are reminded to upload the deliveries excel script")
-    admin_script.steps.add(ScriptStep.objects.create(
-        script=admin_script,
-        email=reminder_email,
-        order=0,
-        rule=ScriptStep.RESEND_MOVEON,
-        start_offset=0,
-        retry_offset=3600*24,
-        num_tries=100,
-        ))
+#    reminder_email = Email.objects.create(subject="SupplyTracking: Excel Upload reminder",
+#                                          message="You are reminded to upload the deliveries excel script")
+#    admin_script.steps.add(ScriptStep.objects.create(
+#        script=admin_script,
+#        email=reminder_email,
+#        order=0,
+#        rule=ScriptStep.RESEND_MOVEON,
+#        start_offset=0,
+#        retry_offset=3600*24,
+#        num_tries=100,
+#        ))
     
     outstanding_delivery_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
                                          message="you have %s outstanding deliveries"%Delivery.objects.filter(
@@ -34,7 +34,7 @@ def create_scripts():
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
         email=outstanding_delivery_email,
-        order=1,
+        order=0,
         rule=ScriptStep.RESEND_MOVEON,
         start_offset=3,
         retry_offset=3600*24,
@@ -66,19 +66,19 @@ def create_scripts():
            name="script for consignee",
            )
     consignee_script.sites.add(Site.objects.get_current())
-    consignee_script.steps.add(ScriptStep.objects.create(
-           script=consignee_script,
-           message='consignment sent !',
-           order=0,
-           rule=ScriptStep.WAIT_MOVEON,
-           start_offset=0,
-           giveup_offset=3600 * 24 * 3,
-           ))
+#    consignee_script.steps.add(ScriptStep.objects.create(
+#           script=consignee_script,
+#           message='consignment sent !',
+#           order=0,
+#           rule=ScriptStep.WAIT_MOVEON,
+#           start_offset=0,
+#           giveup_offset=3600 * 24 * 3,
+#           ))
 
     consignee_script.steps.add(ScriptStep.objects.create(
            script=consignee_script,
            poll=delivery_poll,
-           order=1,
+           order=0,
            rule=ScriptStep.STRICT,
            start_offset=0,
            retry_offset=3600 * 24,

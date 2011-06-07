@@ -31,7 +31,6 @@ class ModelTest(TestCase):
          load_excel_file(transporter_file, 'transporter')
 
 
-
      def fakeIncoming(self, message, connection=None):
         if connection is None:
             connection = Connection.objects.all()[0]
@@ -65,45 +64,67 @@ class ModelTest(TestCase):
             progress.append(ScriptProgress.objects.create(connection=admin.default_connection, script=admin_script))
         response = check_progress(admins[0].default_connection)
         progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
-        self.assertEquals(progress[0].step.order, 0)
-        self.assertEquals(response, admin_script.steps.get(order=0).email)
+        self.assertEquals(progress[0].step, 'Not Started')
+        self.assertEquals(response, None)
         
         #wait for one day, the script should re-send the reminder to the admins
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
-        self.assertEquals(response, admin_script.steps.get(order=0).email)
+        self.assertEquals(response, None)
         
-        # no excel upload does not move the script to next step for all admins
-        response = check_progress(admins[1].default_connection)
-        progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
-        self.assertEquals(progress[1].step.order, 0)
-        
-        #upload a sheet and the admins should be moved to next step after a three day time offset
+        #upload a sheet we expect delivery objects to be created but not necessary trigger off any scripts
         upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
         file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
         form = UploadForm({},file_dict)
         self.assertTrue(form.is_valid())
         msg = handle_excel_file(form.cleaned_data['excel_file'])
         
-        # a sheet upload waits for time_offset before moving admins to the next step
-        response = check_progress(admins[1].default_connection)
-        progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
-        self.assertEquals(progress[1].step.order, 0)
+        #still script not started yet it has to wait for time offset to start
+        response = check_progress(admins[0].default_connection)
+        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
+        self.assertEquals(progress[0].step, None)
         
-        # after 3 days, admins should be moved to the next step
-        self.elapseTime(progress[1], 259201)
-        response = check_progress(admins[1].default_connection)
-        progress[1] = ScriptProgress.objects.get(connection=admins[1].default_connection, script=admin_script)
-        self.assertEquals(progress[1].step.order, 1)
-        self.assertEquals(response, admin_script.steps.get(order=1).email)
-
-
+        #wait one day and upload another excel
+        self.elapseTime(progress[0], 86401)
+        upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel2.xls'), 'rb')
+        file_dict = {'excel_file': SimpleUploadedFile(upload_file.name, upload_file.read())}
+        form = UploadForm({},file_dict)
+        self.assertTrue(form.is_valid())
+        msg = handle_excel_file(form.cleaned_data['excel_file'])
+        
+        #delivery objects increase for different transporters and consignees
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger')).count(), 2)
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping')).count(), 4)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[0].status, 'shipped')
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[1].status, 'shipped')
+        
+        #still we have not moved into any script steps
+        response = check_progress(admins[0].default_connection)
+        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
+        self.assertEquals(progress[0].step, None)
+        
+        # after 2 more days
+        self.elapseTime(progress[0], 86401*2)
+        response = check_progress(admins[0].default_connection)
+        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
+        self.assertEquals(progress[0].step.order, 0)
+        self.assertEquals(response, admin_script.steps.get(order=0).email)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='pending')).count(), 1)
+        
+        # after 1 more day
+        self.elapseTime(progress[0], 86401)
+        response = check_progress(admins[0].default_connection)
+        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
+        self.assertEquals(progress[0].step.order, 0)
+        self.assertEquals(response, admin_script.steps.get(order=0).email)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='pending')).count(), 2)
+        
         #all admins should be on the same step and all should receive an email of outstanding deliveries
         self.assertEquals(
                 ScriptProgress.objects.filter(script=admin_script, connection=admins[0].default_connection).step,
                 ScriptProgress.objects.filter(script=admin_script, connection=admins[1].default_connection).step)
-        self.assertEquals(check_progress(admins[0].default_connection), check_progress(admins[0].default_connection))
-        self.assertEquals(check_progress(admins[0].default_connection), admin_script.steps.get(order=1).email)
+        self.assertEquals(check_progress(admins[0].default_connection), admin_script.steps.get(order=0).email)
+        self.assertEquals(check_progress(admins[1].default_connection), admin_script.steps.get(order=0).email)
 
      def testTransporterScript(self):
          #upload excel, this should result into creation of a delivery
