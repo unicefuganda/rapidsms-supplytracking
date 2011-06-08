@@ -84,7 +84,7 @@ def parse_date_shipped(row,worksheet,cols):
     try:
         date=dateutil.parser.parse(str(worksheet.cell(row, cols['date_shipped']).value).lower())
     except:
-        date=datetime.datetime.now()
+        date=datetime.datetime.now().date()
     return date
 
 def handle_excel_file(file):
@@ -107,6 +107,18 @@ def handle_excel_file(file):
                                                        date_shipped=parse_date_shipped(row,worksheet,cols) ,
                                                        consignee=parse_consignee(row,worksheet,cols),
                                                        transporter=parse_transporter(row,worksheet,cols))
+                
+                #if delivery's consignee and connection are not in any scriptprogress, dump them there
+                if not ScriptProgress.objects.filter(connection=delivery.consignee.default_connection).exists() and not ScriptProgress.objects.filter(connection=delivery.transporter.default_connection).exists():
+                    transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
+                                          connection=delivery.transporter.default_connection)
+
+                    consignee_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
+                                          connection=delivery.consignee.default_connection)
+                else:
+                    #dump it in the backlog
+                    DeliveryBackLog.objects.create(delivery=delivery)
+
                 router=get_router()
                 if consignee:
                     router.add_outgoing(conignee.default_connection,"consignment" + str(delivary.waybill)+ "has been  sent ! ")

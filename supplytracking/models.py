@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from script.models import ScriptProgress,Script
 from django.contrib.auth.models import Group
 from rapidsms.models import Contact
-
+from script.signals import script_progress_was_completed
 
 class Delivery(models.Model):
     SHIPPED='S'
@@ -16,32 +16,30 @@ class Delivery(models.Model):
     status=models.CharField(max_length=1,choices=(
                                                    (SHIPPED,'shipped'),
                                                    (PENDING, 'pending'),
-                                                   (DELIVERED,'delivered'),))
+                                                   (DELIVERED,'delivered'),),default=SHIPPED)
     date_shipped=models.DateField()
     date_delivered=models.DateField(null=True,blank=True)
 
     def __unicode__(self):
         return '%s'%self.waybill
+class DeliveryBackLog(models.Model):
+    delivery=models.ForeignKey(Delivery)
 
-def script_creation_handler(sender,instance, **kwargs):
-    #create script progress for admins , transporters  and consignees
-    #instance = kwargs['instance']
-    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
-    for admin in supply_admins:
-        scriptprogress,progress_created=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
-                                              connection=admin.connection)
-        scriptprogress.start()
-    if instance.transporter:
-        transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
-                                          connection=instance.transporter.default_connection)
-        transporter_progress.start()
-    consignee_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
-                                          connection=instance.consignee.default_connection)
-    consignee_progress.start()
+def schedule_deliveries(sender,instance, **kwargs):
+    if DeliveryBackLog.objects.all().exists():
+        delivery=DeliveryBackLog.objects.order_by(delivery__dateuploaded)[0]
+        #delete from backlog
+        DeliveryBackLog.objects.get(deliver=delivery).delete()
+       
+        if delivery.transporter:
+            transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
+                                              connection=delivery.transporter.default_connection)
+        consignee_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
+                                              connection=delivery.consignee.default_connection)
 
-    return True
+        return True
 
-#post_save.connect(script_creation_handler,sender=Delivery)
+script_progress_was_completed.connect(schedule_deliveries,sender=ScriptProgress)
 
 
 

@@ -18,7 +18,7 @@ def create_scripts():
     admin_script.sites.add(Site.objects.get_current())
     outstanding_delivery_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
                                          message="you have %s outstanding deliveries"%Delivery.objects.filter(
-                                         status=Delivery.shipped_status).count())
+                                         status=Delivery.SHIPPED).count())
     
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
@@ -62,6 +62,11 @@ def create_scripts():
            retry_offset=3600 * 24,
            ))
 
+    #create script progress for admins
+    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admins"))
+    for admin in supply_admins:
+        scriptprogress,progress_created=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="hq_supply_staff"),
+                                                  connection=admin.default_connection)
 
 
 
