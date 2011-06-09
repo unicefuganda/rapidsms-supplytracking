@@ -98,8 +98,8 @@ class ModelTest(TestCase):
         form = UploadForm({},file_dict)
         self.assertTrue(form.is_valid())
         msg = handle_excel_file(form.cleaned_data['excel_file'])
-
-        #wait one day the script should send a two in one email, a reminder and outstanding deliveries report
+                
+        # after 1 more day
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(progress[0].step.order, 0)
@@ -107,37 +107,6 @@ class ModelTest(TestCase):
         
         #new delivery objects are thrown into backlog since there is already an active script progression for admins
         self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
-#        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping')).count(), 4)
-#        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[0].status, 'S')
-#        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger'))[1].status, 'S')
-#        
-#        #still we have not moved into any script steps
-#        response = check_progress(admins[0].default_connection)
-#        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
-#        self.assertEquals(progress[0].step, None)
-#        
-#        # after 2 more days
-#        self.elapseTime(progress[0], 86401*2)
-#        response = check_progress(admins[0].default_connection)
-#        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
-#        self.assertEquals(progress[0].step.order, 0)
-#        self.assertEquals(response, admin_script.steps.get(order=0).email)
-#        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='P')).count(), 1)
-#        
-#        # after 1 more day
-#        self.elapseTime(progress[0], 86401)
-#        response = check_progress(admins[0].default_connection)
-#        progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
-#        self.assertEquals(progress[0].step.order, 0)
-#        self.assertEquals(response, admin_script.steps.get(order=0).email)
-#        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='P')).count(), 2)
-        
-#        #all admins should be on the same step and all should receive an email of outstanding deliveries
-#        self.assertEquals(
-#                ScriptProgress.objects.filter(script=admin_script, connection=admins[0].default_connection).step,
-#                ScriptProgress.objects.filter(script=admin_script, connection=admins[1].default_connection).step)
-#        self.assertEquals(check_progress(admins[0].default_connection), admin_script.steps.get(order=0).email)
-#        self.assertEquals(check_progress(admins[1].default_connection), admin_script.steps.get(order=0).email)
 
      def testTransporterScript(self):
          #upload excel, this should result into creation of a delivery
@@ -174,16 +143,17 @@ class ModelTest(TestCase):
         progress = ScriptProgress.objects.get(connection=transporter_connection, script=transporter_script)
         self.assertEquals(progress.step.order, 0)
         self.assertEquals(response, 'Has the consignment been delivered?')
-        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 1)
-        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='P')).count(), 3)
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 4)
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
         
         #transporter sending delivery message does not affect delivery status
         incomingmessage = self.fakeIncoming('KP/WB11/00034 Delivered')
         response_message = incoming_progress(incomingmessage)
         self.assertEquals(response_message, "Thanks for your response")
         progress = ScriptProgress.objects.get(connection=transporter_connection, script=transporter_script)
-        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 1)
-        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='P')).count(), 3)
+        self.assertEquals(Delivery.objects.get(waybill='KP/WB11/00034').status, 'S')
+        #new delivery objects are thrown into backlog since there is already an active script progression for admins
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
 
      def testConsigneeScript(self):
         #upload excel, this should result into creation of a delivery
@@ -220,15 +190,16 @@ class ModelTest(TestCase):
         progress = ScriptProgress.objects.get(connection=consignee_connection, script=consignee_script)
         self.assertEquals(progress.step.order, 0)
         self.assertEquals(response, 'Has the consignment been delivered?')
-        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='S')).count(), 1)
-        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='P')).count(), 1)
+        self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='S')).count(), 2)
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
         
         #consignee sending in a delivery message should complete the script for transporter and consignee and mark orders as delivered
-        incomingmessage = self.fakeIncoming('KP/WB11/00034 Delivered')
+        incomingmessage = self.fakeIncoming('KP/WB11/00034 COMPLETE KP/WB11/00037 COMPLETE')
         response_message = incoming_progress(incomingmessage)
         self.assertEquals(response_message, "Thanks for your response")
         progress = ScriptProgress.objects.get(connection=consignee_connection, script=consignee_script)
         self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='D')).count(), 2)
+        self.assertEquals(DeliveryBackLog.objects.filter(delivery__consignee=Contact.objects.get(name='action against hunger')), None)
         
 #     def testFulldeliveryScript(self):
 #        admin_script = Script.objects.get(slug='hq_supply_staff')

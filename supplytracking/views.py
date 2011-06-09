@@ -78,7 +78,7 @@ def parse_status(row,worksheet,cols):
     return str(worksheet.cell(row, cols['status']).value)
 
 def parse_consignee(row,worksheet,cols):
-    return Contact.objects.filter(name__icontains = str(worksheet.cell(row, cols['consignee']).value).lower())[0]
+    return Contact.objects.get(name = str(worksheet.cell(row, cols['consignee']).value).lower())
 
 def parse_date_shipped(row,worksheet,cols):
     try:
@@ -121,8 +121,8 @@ def handle_excel_file(file):
                     DeliveryBackLog.objects.create(delivery=delivery)
 
                 router=get_router()
-                if consignee:
-                    router.add_outgoing(conignee.default_connection,"consignment" + str(delivary.waybill)+ "has been  sent ! ")
+                if delivery.consignee:
+                    router.add_outgoing(delivery.consignee.default_connection,"consignment" + str(delivery.waybill)+ "has been  sent ! ")
                 
                 deliveries.append(delivery.waybill)
                 
