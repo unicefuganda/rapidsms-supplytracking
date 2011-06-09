@@ -2,16 +2,17 @@ from django import template
 from django.shortcuts import get_object_or_404
 from supplytracking.models import Delivery, DeliveryBackLog
 import datetime
+from django.db.models import Max
 
 
 def email_subject(connection):
-    if send_excel_reminder:
+    if send_excel_reminder():
        return 'Reminder to Upload Consignments Excel Sheet'
     else:
         return 'Outstanding Deliveries Report'
 
 def excel_reminder_msg(connection):
-    if send_excel_reminder:
+    if send_excel_reminder():
         return 'You are kindly  reminded to upload the Excel Sheet from UNITRAC containing all outgoing consignments!' \
         '<p>Please login <a href="#">here</a> to upload the excel sheet</p>'
     else:
@@ -27,9 +28,8 @@ def outstanding_deliveries_msg(connection):
                 '<p>'+list+'</p>'
 
 def send_excel_reminder():
-    return len(DeliveryBackLog.objects.all()) > 0 or \
-    (len(DeliveryBackLog.objects.all()) > 0 and \
-     (Delivery.objects.aggregate(Max('date_uploaded')) + timedelta(days=3) <= datetime.datetime))
+    return Delivery.objects.aggregate(Max('date_uploaded')) != datetime.datetime and \
+        len(DeliveryBackLog.objects.all()) == 0
 
 
 register = template.Library()
