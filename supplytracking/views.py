@@ -109,7 +109,8 @@ def handle_excel_file(file):
                                                        transporter=parse_transporter(row,worksheet,cols))
                 
                 #if delivery's consignee and connection are not in any scriptprogress, dump them there
-                if not ScriptProgress.objects.filter(connection=delivery.consignee.default_connection).exists() and not ScriptProgress.objects.filter(connection=delivery.transporter.default_connection).exists():
+                if not ScriptProgress.objects.filter(connection=delivery.consignee.default_connection).exists() \
+                and not ScriptProgress.objects.filter(connection=delivery.transporter.default_connection).exists():
                     transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
                                           connection=delivery.transporter.default_connection)
 

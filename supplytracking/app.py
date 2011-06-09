@@ -15,7 +15,7 @@ class App (AppBase):
             if waybill_match:
                 waybill=waybill_match.group('waybill')
                 delivery=Delivery.objects.get(waybill=waybill)
-                if  DeliveryLog.objects.filter('delivery__waybill'=waybill).exists():
+                if  DeliveryBackLog.objects.filter(delivery__waybill=waybill).exists():
                     delivery.status=Delivery.delivered_status
                     delivery.save()
                 elif delivery.consignee.default_connection==message.connection and ScriptSession.objects.filter(connection=message.connection).exists():
