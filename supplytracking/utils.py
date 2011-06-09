@@ -16,9 +16,8 @@ def create_scripts():
         })
     admin_script = Script.objects.create(slug="hq_supply_staff",name="supply staff script")
     admin_script.sites.add(Site.objects.get_current())
-    outstanding_delivery_email= Email.objects.create(subject="SupplyTracking: Outstanding Deliveries Reminder",
-                                         message="you have %s outstanding deliveries"%Delivery.objects.filter(
-                                         status=Delivery.SHIPPED).count())
+    outstanding_delivery_email= Email.objects.create(subject='{% load email_content %} SupplyTracking: {{ connection|email_subject }}',
+                                         message='{{ connection|excel_reminder }} {{ connection|outstanding_deliveries }}')
     
     admin_script.steps.add(ScriptStep.objects.create(
         script=admin_script,
