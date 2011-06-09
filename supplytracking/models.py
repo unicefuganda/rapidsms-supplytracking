@@ -5,6 +5,7 @@ from script.models import ScriptProgress,Script
 from django.contrib.auth.models import Group
 from rapidsms.models import Contact
 from script.signals import script_progress_was_completed
+from django.utils.text import get_text_list
 
 class Delivery(models.Model):
     SHIPPED='S'
@@ -20,6 +21,15 @@ class Delivery(models.Model):
     date_shipped=models.DateField()
     date_uploaded=models.DateTimeField(auto_now=True)
     date_delivered=models.DateField(null=True,blank=True)
+
+    def consignee_msg(self):
+        consignee_deliveries=get_text_list(list(Delivery.objects.filter(consignee=self.consignee).values_list('waybill',flat=True)))
+        msg="have you received consignments %s"%consignee_deliveries
+        return msg
+    def get_transporter_msg(self):
+        transporter_deliveries=get_text_list(list(Delivery.objects.filter(transporter=self.transporter).values_list('waybill',flat=True)))
+        msg="have you received dconsignments %s"%consignee_deliveries
+        return msg
 
     def __unicode__(self):
         return '%s'%self.waybill
