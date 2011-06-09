@@ -17,6 +17,7 @@ from supplytracking.views import UploadForm, handle_excel_file
 from django.db import connection
 import os
 from supplytracking.views import handle_excel_file
+from django.template import Template, Context
 
 
 
@@ -65,13 +66,15 @@ class ModelTest(TestCase):
         response = check_progress(admins[0].default_connection)
         progress[0] = ScriptProgress.objects.get(connection=admins[0].default_connection, script=admin_script)
         self.assertEquals(progress[0].step.order, 0)
-        self.assertEquals(response.subject, 'SupplyTracking: Outstanding Deliveries Reminder')
+        subject = Template(response.subject)
+        self.assertEquals(subject.render(Context(admins[0].default_connection)), 'SupplyTracking: Reminder to Upload Consignments Excel Sheet')
         
         #wait for one day, the script should re-send the reminder to the admins to upload excel
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(progress[0].step.order, 0)
-        self.assertEquals(response.subject, 'SupplyTracking: Outstanding Deliveries Reminder')
+        subject = Template(response.subject)
+        self.assertEquals(subject.render(Context(admins[0].default_connection)), 'SupplyTracking: Reminder to Upload Consignments Excel Sheet')
         
         #upload a sheet we expect delivery objects to be created but not necessary trigger off any scripts
         upload_file = open(os.path.join(os.path.join(os.path.realpath(os.path.dirname(__file__)),'fixtures'),'excel.xls'), 'rb')
@@ -88,7 +91,8 @@ class ModelTest(TestCase):
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(progress[0].step.order, 0)
-        self.assertEquals(response.subject, 'SupplyTracking: Outstanding Deliveries Reminder')
+        subject = Template(response.subject)
+        self.assertEquals(subject.render(Context(admins[0].default_connection)), 'SupplyTracking: Reminder to Upload Consignments Excel Sheet')
         
         #wait for one day, upload another excel
         self.elapseTime(progress[0], 86401)
@@ -102,9 +106,8 @@ class ModelTest(TestCase):
         self.elapseTime(progress[0], 86401)
         response = check_progress(admins[0].default_connection)
         self.assertEquals(progress[0].step.order, 0)
-        self.assertEquals(response.subject, 'SupplyTracking: Outstanding Deliveries Reminder')
-        print Delivery.objects.values_list('waybill')
-        print DeliveryBackLog.objects.values_list('delivery__waybill')
+        subject = Template(response.subject)
+        self.assertEquals(subject.render(Context(admins[0].default_connection)), 'SupplyTracking: Outstanding Deliveries Report')
         #new delivery objects are thrown into backlog since there is already an active script progression for admins
         self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='kp/wb11/00037'), Delivery.objects.get(waybill='kp/wb11/00037'))
 

@@ -1,14 +1,14 @@
 from django import template
 from django.shortcuts import get_object_or_404
-from supplyTracking import Delivery, DeliveryBackLog
+from supplytracking.models import Delivery, DeliveryBackLog
 import datetime
 
 
 def email_subject(connection):
     if send_excel_reminder:
-       return 'SupplyTracking: Reminder to Upload Consignments Excel Sheet'
+       return 'Reminder to Upload Consignments Excel Sheet'
     else:
-        return 'SupplyTracking: Outstanding Deliveries Report'
+        return 'Outstanding Deliveries Report'
 
 def excel_reminder_msg(connection):
     if send_excel_reminder:
@@ -34,5 +34,5 @@ def send_excel_reminder():
 
 register = template.Library()
 register.filter('email_subject', email_subject)
-register.filter('excel_reminder', excel_reminder)
-register.filter('outstanding_deliveries', outstanding_deliveries)
+register.filter('excel_reminder_msg', excel_reminder_msg)
+register.filter('outstanding_deliveries_msg', outstanding_deliveries_msg)
