@@ -24,8 +24,8 @@ def create_scripts():
         script=admin_script,
         email=outstanding_delivery_email,
         order=0,
-        rule=ScriptStep.RESEND_MOVEON,
-        start_offset=3600*24*3,
+        rule=ScriptStep.RESEND_GIVEUP,
+        start_offset=0,
         retry_offset=3600*24,
         num_tries=100, 
         ))
