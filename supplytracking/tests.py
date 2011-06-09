@@ -106,7 +106,7 @@ class ModelTest(TestCase):
         print Delivery.objects.values_list('waybill')
         print DeliveryBackLog.objects.values_list('delivery__waybill')
         #new delivery objects are thrown into backlog since there is already an active script progression for admins
-        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='kp/wb11/00037'), Delivery.objects.get(waybill='kp/wb11/00037'))
 
      def testTransporterScript(self):
          #upload excel, this should result into creation of a delivery
@@ -144,16 +144,16 @@ class ModelTest(TestCase):
         self.assertEquals(progress.step.order, 0)
         self.assertEquals(response, 'Has the consignment been delivered?')
         self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 4)
-        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='kp/wb11/00037'), Delivery.objects.get(waybill='kp/wb11/00037'))
         
         #transporter sending delivery message does not affect delivery status
-        incomingmessage = self.fakeIncoming('KP/WB11/00034 Delivered')
+        incomingmessage = self.fakeIncoming('kp/wb11/00034 Delivered')
         response_message = incoming_progress(incomingmessage)
         self.assertEquals(response_message, "Thanks for your response")
         progress = ScriptProgress.objects.get(connection=transporter_connection, script=transporter_script)
-        self.assertEquals(Delivery.objects.get(waybill='KP/WB11/00034').status, 'S')
+        self.assertEquals(Delivery.objects.get(waybill='kp/wb11/00034').status, 'S')
         #new delivery objects are thrown into backlog since there is already an active script progression for admins
-        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='kp/wb11/00037'), Delivery.objects.get(waybill='kb/wb11/00037'))
 
      def testConsigneeScript(self):
         #upload excel, this should result into creation of a delivery
@@ -191,10 +191,10 @@ class ModelTest(TestCase):
         self.assertEquals(progress.step.order, 0)
         self.assertEquals(response, 'Has the consignment been delivered?')
         self.assertEquals(Delivery.objects.filter(consignee=Contact.objects.get(name='action against hunger', status='S')).count(), 2)
-        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='KP/WB11/00037'), Delivery.objects.get(waybill='KP/WB11/00037'))
+        self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='kp/wb11/00037'), Delivery.objects.get(waybill='kp/wb11/00037'))
         
         #consignee sending in a delivery message should complete the script for transporter and consignee and mark orders as delivered
-        incomingmessage = self.fakeIncoming('KP/WB11/00034 COMPLETE KP/WB11/00037 COMPLETE')
+        incomingmessage = self.fakeIncoming('kp/wb11/00034 COMPLETE kb/wb11/00037 COMPLETE')
         response_message = incoming_progress(incomingmessage)
         self.assertEquals(response_message, "Thanks for your response")
         progress = ScriptProgress.objects.get(connection=consignee_connection, script=consignee_script)
