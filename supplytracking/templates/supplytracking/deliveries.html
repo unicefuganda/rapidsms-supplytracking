@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{%  block content %}
+    <a href="/supply_tracking">Home</a>
+    <div class="module">
+    <h3>All Deliveries</h3>
+<table width="100%">
+    <th>
+        <tr><td>Waybill</td><td>Consignee</td> <td>Transporter</td> <td>Date Shipped</td><td>Status</td></tr>
+    </th>
+    <tbody>
+    {% for delivery in deliveries %}
+    <tr><td>{{delivery.waybill}}</td><td>{{ delivery.consignee}}</td> <td>{{delivery.transporter}}</td> <td>{{delivery.date_shipped}}</td><td>{{delivery.status}}</td></tr>
+   {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

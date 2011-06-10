@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{%  block content %}
+    <a href="/supply_tracking">Home</a>
+    <div class="module">
+    <h3>All Consignees</h3>
+<table width="100%">
+    <th>
+        <tr><td>Name</td><td>Telephone</td></tr>
+    </th>
+    <tbody>
+    {% for consignee in consignees %}
+    <tr><td>{{consignee.name}}</td><td>{{ consignee.default_connection}}</td> </tr>
+   {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

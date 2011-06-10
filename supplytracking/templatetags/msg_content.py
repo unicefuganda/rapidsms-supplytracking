@@ -37,11 +37,11 @@ def consignee_poll_msg(connection):
     return Delivery.objects.filter(consignee=Contact.objects.get(connection=connection).name)[0].get_consignee_msg()    
 
 def send_excel_reminder():
-    return Delivery.objects.aggregate(Max('date_uploaded')).get('date_uploaded_max') != datetime.datetime.now().date() and \
-        len(DeliveryBackLog.objects.all()) == 0
+    return Delivery.objects.aggregate(Max('date_uploaded')).get('date_uploaded__max',None) != datetime.datetime.now().date() and \
+        DeliveryBackLog.objects.all().exists()
         
 def send_excel_reminder_msg():
-    return Delivery.objects.aggregate(Max('date_uploaded')).get('date_uploaded_max') != datetime.datetime.now().date()
+    return Delivery.objects.aggregate(Max('date_uploaded')).get('date_uploaded__max',None) != datetime.datetime.now().date()
 
 
 register = template.Library()
