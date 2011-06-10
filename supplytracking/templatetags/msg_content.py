@@ -12,7 +12,7 @@ def email_subject(connection):
         return 'Outstanding Deliveries Report'
 
 def excel_reminder_msg(connection):
-    if send_excel_reminder():
+    if send_excel_reminder_msg():
         return 'You are kindly  reminded to upload the Excel Sheet from UNITRAC containing all outgoing consignments!' \
         '<p>Please login <a href="#">here</a> to upload the excel sheet</p>'
     else:
@@ -26,10 +26,19 @@ def outstanding_deliveries_msg(connection):
         list = '<br />'.join(deliveries) 
         return 'The following Deliveries are outstanding' \
                 '<p>'+list+'</p>'
+                
+def transporter_poll_msg(connection):
+    return Delivery.objects.get(transporter=Contact.objects.get(default_connection=connection).name).get_transpoter_msg()
+
+def consignee_poll_msg(connection):
+    return Delivery.objects.get(consignee=Contact.objects.get(default_connection=connection).name).get_consignee_msg()    
 
 def send_excel_reminder():
     return Delivery.objects.aggregate(Max('date_uploaded')) != datetime.datetime and \
         len(DeliveryBackLog.objects.all()) == 0
+        
+def send_excel_reminder_msg():
+    return Delivery.objects.aggregate(Max('date_uploaded')) != datetime.datetime
 
 
 register = template.Library()

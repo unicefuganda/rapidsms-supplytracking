@@ -6,6 +6,7 @@ from xlrd import open_workbook
 from django.contrib.auth.models import Group
 from rapidsms.models import Contact,Connection
 from uganda_common.utils import assign_backend
+from poll.models import Poll, ResponseCategory, Response, Category
 
 
 def create_scripts():
@@ -32,13 +33,46 @@ def create_scripts():
     ### transporter script ####
     
     user = User.objects.get(username="admin")
+    description = 'Transporters Poll'
+    question = '{% load msg_content %}{{ connection|transpoter_poll_msg }}'
+    default_response = 'Thank you for your response'
+    transporter_poll = Poll.objects.create(name=description,question=question,default_response=default_response,user=user)
+    transporter_poll.add_yesno_categories()
+
+    transporter_poll.sites.add(Site.objects.get_current())
+    yes_category = transporter_poll.categories.get(name='yes')
+    yes_category.name = 'delivered'
+    yes_category.response = "Thank you for your response" 
+    yes_category.priority = 4
+    yes_category.color = '99ff77'
+    yes_category.save()
+    no_category = transporter_poll.categories.get(name='no')
+    no_category.response = "Thank you for your response"
+    no_category.name = 'undelivered'
+    no_category.priority = 1
+    no_category.color = 'ff9977'
+    no_category.save()
+    unknown_category = transporter_poll.categories.get(name='unknown')
+    unknown_category.default = False
+    unknown_category.priority = 2
+    unknown_category.color = 'ffff77'
+    unknown_category.save()
+    unclear_category = Category.objects.create(
+        poll=transporter_poll,
+        name='unclear',
+        default=True,
+        color='ffff77',
+        response='We have received but did not understand your response,please resend (with yes or no)',
+        priority=3
+    )
+    
     transporter_script = Script.objects.create(slug="transporter",name="transporter script")
     transporter_script.sites.add(Site.objects.get_current())
-    
-    delivery_poll = Poll.create_yesno('consignment_delivered', 'Has the consignment been delivered?',"Thanks for your response", [], user)
+#    
+#    delivery_poll = Poll.create_yesno('consignment_delivered', 'Has the consignment been delivered?',"Thanks for your response", [], user)
     transporter_script.steps.add(ScriptStep.objects.create(
            script=transporter_script,
-           poll=delivery_poll,
+           poll=transporter_poll,
            order=0,
            rule=ScriptStep.RESEND_MOVEON,
            start_offset=3600 * 24 * 3,
@@ -48,13 +82,45 @@ def create_scripts():
 
 
         ###  consignee script ####
+        
+    description = 'Consignees Poll'
+    question = '{% load msg_content %}{{ connection|consignee_poll_msg }}'
+    consignee_poll = Poll.objects.create(name=description,question=question,default_response=default_response,user=user)
+    consignee_poll.add_yesno_categories()
 
+    consignee_poll.sites.add(Site.objects.get_current())
+    yes_category = consignee_poll.categories.get(name='yes')
+    yes_category.name = 'delivered'
+    yes_category.response = "Thank you for your response" 
+    yes_category.priority = 4
+    yes_category.color = '99ff77'
+    yes_category.save()
+    no_category = consignee_poll.categories.get(name='no')
+    no_category.response = "Thank you for your response"
+    no_category.name = 'undelivered'
+    no_category.priority = 1
+    no_category.color = 'ff9977'
+    no_category.save()
+    unknown_category = consignee_poll.categories.get(name='unknown')
+    unknown_category.default = False
+    unknown_category.priority = 2
+    unknown_category.color = 'ffff77'
+    unknown_category.save()
+    unclear_category = Category.objects.create(
+        poll = consignee_poll,
+        name = 'unclear',
+        default = True,
+        color = 'ffff77',
+        response = 'We have received but did not understand your response,please resend (with no or <waybill> COMPLETE <waybill> DAMAGED)',
+        priority = 3
+    )
+    
     consignee_script = Script.objects.create(slug="consignee",name="script for consignee",)
     consignee_script.sites.add(Site.objects.get_current())
     
     consignee_script.steps.add(ScriptStep.objects.create(
            script=consignee_script,
-           poll=delivery_poll,
+           poll=consignee_poll,
            order=0,
            rule=ScriptStep.STRICT,
            start_offset=3600 * 24 * 3,

@@ -22,13 +22,13 @@ class Delivery(models.Model):
     date_uploaded=models.DateTimeField(auto_now=True)
     date_delivered=models.DateField(null=True,blank=True)
 
-    def consignee_msg(self):
+    def get_consignee_msg(self):
         consignee_deliveries=get_text_list(list(Delivery.objects.filter(consignee=self.consignee).values_list('waybill',flat=True)))
         msg="have you received consignments %s"%consignee_deliveries
         return msg
     def get_transporter_msg(self):
         transporter_deliveries=get_text_list(list(Delivery.objects.filter(transporter=self.transporter).values_list('waybill',flat=True)))
-        msg="have you received dconsignments %s"%consignee_deliveries
+        msg="have you delivered consignments %s"%consignee_deliveries
         return msg
 
     def __unicode__(self):
