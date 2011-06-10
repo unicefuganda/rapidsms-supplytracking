@@ -136,7 +136,6 @@ class ModelTest(TestCase):
         transporter_script=Script.objects.get(slug='transporter')
         default_connection = Contact.objects.get(name='3ways shipping').default_connection
         transporter_connection = default_connection.pk
-#        progress = ScriptProgress.objects.create(connection=transporter_connection, script=transporter_script)
         response = check_progress(transporter_connection)
         self.assertEquals(progress.step, None)
         self.assertEquals(response, None)
@@ -150,7 +149,7 @@ class ModelTest(TestCase):
         self.assertEquals(progress.step.order, 0)
         response_msg = Template(response)
         self.assertEquals(response_msg.render(Context(transporter_connection)), 'Has the consignment been delivered?')
-        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping', status='S')).count(), 4)
+        self.assertEquals(Delivery.objects.filter(transporter=Contact.objects.get(name='3ways shipping'), status='S').count(), 4)
         self.assertEquals(DeliveryBackLog.objects.get(delivery__waybill='kp/wb11/00037'), Delivery.objects.get(waybill='kp/wb11/00037'))
         
         #transporter sending delivery message does not affect delivery status
