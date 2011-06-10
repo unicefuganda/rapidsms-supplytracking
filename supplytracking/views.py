@@ -111,6 +111,7 @@ def handle_excel_file(file):
                 #if delivery's consignee and connection are not in any scriptprogress, dump them there
                 if not ScriptProgress.objects.filter(connection=delivery.consignee.default_connection).exists() \
                 and not ScriptProgress.objects.filter(connection=delivery.transporter.default_connection).exists():
+                    print(delivery.waybill,delivery.consignee,delivery.transporter)
                     transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
                                           connection=delivery.transporter.default_connection)
 
@@ -161,3 +162,13 @@ def index(request):
     consigneeform=ConsigneeForm()
     transporterform=TransporterForm()
     return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'transporterform':transporterform,'consigneeform':consigneeform}, context_instance=RequestContext(request))
+def view_deliveries(request):
+    deliveries=Delivery.objects.all()
+    return render_to_response('supplytracking/deliveries.html',{'deliveries':deliveries},context_instance=RequestContext(request))
+def view_consignees(request):
+    consignees=Contact.objects.filter(groups__in=[Group.objects.get(name='consignee')])
+    return render_to_response('supplytracking/consignees.html',{'consignees':consignees},context_instance=RequestContext(request))
+
+def view_transporters(request):
+    transporters=Contact.objects.filter(groups__in=[Group.objects.get(name='transporter')])
+    return render_to_response('supplytracking/transporters.html',{'transporters':transporters},context_instance=RequestContext(request))

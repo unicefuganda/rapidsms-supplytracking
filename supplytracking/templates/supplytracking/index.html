@@ -1,9 +1,12 @@
 {% extends 'layout.html' %}
 
 {%  block content %}
+    <a href="/supply_tracking/deliveries">View All Deliveries</a>|
+    <a href="/supply_tracking/consignees">View Consignees</a>|
+     <a href="/supply_tracking/transporters">View Transporters</a>
     <div class="module">
     <h3>Upload Deliveries Excel File</h3>
-<table>
+<table width="100%">
 <form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
 {{deliveryform.as_table}}
 <tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
@@ -14,7 +17,7 @@
 
     <div class="module">
     <h3>Upload Consignees Excel File</h3>
-<table>
+<table width="100%">
 <form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
 {{consigneeform.as_table}}
 <tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
@@ -24,7 +27,7 @@
 
 <div class="module">
     <h3>Upload Transporter Excel File</h3>
-<table>
+<table width="100%">
 <form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
 {{transporterform.as_table}}
 <tr ><td></td><td><input type="submit" value="Submit" /></td></tr>

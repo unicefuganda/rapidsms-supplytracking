@@ -19,7 +19,7 @@ class Delivery(models.Model):
                                                    (PENDING, 'pending'),
                                                    (DELIVERED,'delivered'),),default=SHIPPED)
     date_shipped=models.DateField()
-    date_uploaded=models.DateTimeField(auto_now=True)
+    date_uploaded=models.DateField(auto_now=True)
     date_delivered=models.DateField(null=True,blank=True)
 
     def get_consignee_msg(self):
