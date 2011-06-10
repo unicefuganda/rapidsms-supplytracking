@@ -34,7 +34,7 @@ def create_scripts():
     
     user = User.objects.get(username="admin")
     description = 'Transporters Poll'
-    question = '{% load msg_content %}{{ connection|transpoter_poll_msg }}'
+    question = '{% load msg_content %}{{ connection|transporter_poll_msg }}'
     default_response = 'Thank you for your response'
     transporter_poll = Poll.objects.create(name=description,question=question,default_response=default_response,user=user)
     transporter_poll.add_yesno_categories()
