@@ -1,37 +1,43 @@
 {% extends 'layout.html' %}
-
 {%  block content %}
-    <a href="/supply_tracking/deliveries">View All Deliveries</a>|
-    <a href="/supply_tracking/consignees">View Consignees</a>|
-     <a href="/supply_tracking/transporters">View Transporters</a>
-    <div class="module">
-    <h3>Upload Deliveries Excel File</h3>
-<table width="100%">
-<form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
-{{deliveryform.as_table}}
-<tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
-</form>
-</table>
-        </div>
-<p>{{ message }}</p>
-
-    <div class="module">
-    <h3>Upload Consignees Excel File</h3>
-<table width="100%">
-<form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
-{{consigneeform.as_table}}
-<tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
-</form>
-</table>
-        </div>
-
+<a href="/supplytracking/deliveries">View All Deliveries</a>|
+<a href="/supplytracking/consignees">View Consignees</a>|
+<a href="/supplytracking/transporters">View Transporters</a>
 <div class="module">
-    <h3>Upload Transporter Excel File</h3>
-<table width="100%">
-<form enctype="multipart/form-data" action="/supply_tracking/" method="POST">
-{{transporterform.as_table}}
-<tr ><td></td><td><input type="submit" value="Submit" /></td></tr>
-</form>
-</table>
-        </div>
+    <h3>Upload Deliveries Excel File</h3>
+    <table width="100%">
+        <form enctype="multipart/form-data" action="/supplytracking/" method="POST">
+            {{deliveryform.as_table}}
+            <tr>
+            	<td></td>
+				<td><input type="submit" value="Submit" /></td>
+			</tr>
+        </form>
+    </table>
+ </div>
+<p>{{ message }}</p>
+<div class="module">
+    <h3>Upload Consignees Excel File (Only if list consignees has changed)</h3>
+    <table width="100%">
+        <form enctype="multipart/form-data" action="/supplytracking/" method="POST">
+            {{consigneeform.as_table}}
+            <tr>
+        	   <td></td>
+			   <td><input type="submit" value="Submit" /></td>
+		    </tr>
+        </form>
+    </table>
+</div>
+<div class="module">
+    <h3>Upload Transporter Excel File (Only if list of transporters has changed)</h3>
+    <table width="100%">
+        <form enctype="multipart/form-data" action="/supplytracking/" method="POST">
+            {{transporterform.as_table}}
+            <tr>
+            	<td></td>
+				<td><input type="submit" value="Submit" /></td>
+			</tr>
+        </form>
+    </table>
+</div>
 {% endblock %}

@@ -10,7 +10,7 @@ class Command(BaseCommand):
         ####  admins  script #####
 
         admin_script = Script.objects.create(
-                slug="hq_supply_staff",
+                slug="supply_staff",
                 name="script for head quarters supply staff",
         )
 

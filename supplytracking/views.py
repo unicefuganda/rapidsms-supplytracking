@@ -6,12 +6,14 @@ from django.db import IntegrityError
 
 from xlrd import open_workbook
 from uganda_common.utils import assign_backend
-import dateutil
-from supplytracking.utils import load_excel_file
 from supplytracking.models import *
 import datetime
 from script.models import *
-from rapidsms_httprouter.router import get_router
+from rapidsms_httprouter.models import Message
+from rapidsms_httprouter.router import HttpRouter
+from rapidsms.models import Connection
+from django.views.decorators.cache import cache_control
+from ureport.views import handle_excel_file as upload_excel
 
 class UploadForm(forms.Form):
     nodelivery = forms.BooleanField(widget=forms.CheckboxInput(),
@@ -45,7 +47,7 @@ class TransporterForm(forms.Form):
         return self.cleaned_data
 
 def parse_header_row(worksheet):
-    fields=['transporter','waybill','consignee','date_shipped','status']
+    fields=['waybill nr', 'transporter','consignee','shipping date']
     field_cols={}
     for col in range(worksheet.ncols):
         value = worksheet.cell(0, col).value
@@ -57,19 +59,17 @@ def parse_header_row(worksheet):
 
 
 def parse_waybill(row,worksheet,cols):
-    return str(worksheet.cell(row, cols['waybill']).value).lower()
+    return str(worksheet.cell(row, cols['waybill nr']).value).strip()
 
 def parse_transporter(row,worksheet,cols):
     try:
-        contact,contact_created=Contact.objects.get_or_create(name=str(worksheet.cell(row, cols['transporter']).value).lower())
+        name=str(worksheet.cell(row, cols['transporter']).value).strip()
+        name = ' '.join([t.capitalize() for t in name.lower().split()])
+#        contact,contact_created=Contact.objects.get_or_create(name=str(worksheet.cell(row, cols['transporter']).value).lower())
+        contact,contact_created=Contact.objects.get_or_create(name__iexact=name)
         if contact_created:
-            transporter,transporter_created=Group.objects.get_or_create(name='transporter')
-            contact.groups.add(transporter)
-            backend=assign_backend(telephone)[1]
-            connection=Connection.objects.create(identity=str(sheet.cell(row, telephone_col)),
-                                                                    backend=backend)
-            connection.contact=contact
-            connection.save()
+            group,group_created=Group.objects.get_or_create(name='transporter')
+            contact.groups.add(group)
         return contact
     except:
         return None
@@ -78,13 +78,18 @@ def parse_status(row,worksheet,cols):
     return str(worksheet.cell(row, cols['status']).value)
 
 def parse_consignee(row,worksheet,cols):
-    return Contact.objects.get(name = str(worksheet.cell(row, cols['consignee']).value).lower())
+    name=str(worksheet.cell(row, cols['consignee']).value).strip()
+    name = ' '.join([t.capitalize() for t in name.lower().split()])
+    try:
+        return Contact.objects.get(name__iexact=name)
+    except Contact.DoesNotExist:
+        return 'Consignee:--> '+name+' <-- does not exist in the system, please first upload the consignee details before uploading deliveries to this consignee'
 
 def parse_date_shipped(row,worksheet,cols):
     try:
-        date=dateutil.parser.parse(str(worksheet.cell(row, cols['date_shipped']).value).lower())
+        date = datetime.datetime.strptime(str(worksheet.cell(row, cols['shipping date']).value).lower(),'%d/%m/%Y')
     except:
-        date=datetime.datetime.now().date()
+        date=datetime.datetime.now()
     return date
 
 def handle_excel_file(file):
@@ -103,31 +108,38 @@ def handle_excel_file(file):
                 duplicates.append(d.waybill)
 
             except Delivery.DoesNotExist:
-                delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
-                                                       date_shipped=parse_date_shipped(row,worksheet,cols) ,
-                                                       consignee=parse_consignee(row,worksheet,cols),
-                                                       transporter=parse_transporter(row,worksheet,cols))
-                
-                #if delivery's consignee and connection are not in any scriptprogress, dump them there
-                if not ScriptProgress.objects.filter(connection=delivery.consignee.default_connection).exists() \
-                and not ScriptProgress.objects.filter(connection=delivery.transporter.default_connection).exists():
-                    print(delivery.waybill,delivery.consignee,delivery.transporter)
-                    transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),
-                                          connection=delivery.transporter.default_connection)
-
-                    consignee_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),
-                                          connection=delivery.consignee.default_connection)
+                if type(parse_consignee(row, worksheet, cols)) == Contact:
+                    delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
+                                                           date_shipped=parse_date_shipped(row,worksheet,cols) ,
+                                                           consignee=parse_consignee(row,worksheet,cols),
+                                                           transporter=parse_transporter(row,worksheet,cols))
+                    
+                    #if delivery's consignee and connection are not in any scriptprogress, dump them there
+                    if not ScriptProgress.objects.filter(connection=delivery.consignee.default_connection).exists():
+                        consignee_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="consignee"),\
+                                                                          connection=delivery.consignee.default_connection)
+                    else:
+                        #dump it in the backlog
+                        DeliveryBackLog.objects.create(delivery=delivery)
+                    
+                    #create transporter scriptprogress if transporter does not exist in the scriptprogress model
+                    if delivery.transporter.default_connection:
+                        if not ScriptProgress.objects.filter(connection=delivery.transporter.default_connection).exists():
+                            transporter_progress=ScriptProgress.objects.create(script=Script.objects.get(slug="transporter"),\
+                                                                               connection=delivery.transporter.default_connection)
+                    
+                    #notify consignee of consignments
+                    rounter = HttpRouter()
+                    if delivery.consignee:
+                        Message.objects.create(connection=Connection.objects.get(identity=delivery.consignee.default_connection.identity),
+                                             text="Consignment " + str(delivery.waybill)+ " has been  sent ! ",
+                                             direction='O',
+                                             status='Q')
+                    deliveries.append(delivery.waybill)               
+                    continue
                 else:
-                    #dump it in the backlog
-                    DeliveryBackLog.objects.create(delivery=delivery)
-
-                router=get_router()
-                if delivery.consignee:
-                    router.add_outgoing(delivery.consignee.default_connection,"consignment" + str(delivery.waybill)+ "has been  sent ! ")
-                
-                deliveries.append(delivery.waybill)
-                
-                continue
+                    return parse_consignee(row, worksheet, cols)
+                    exit()
         if len(deliveries)>0:
             return 'deliveries with waybills ' +' ,'.join(deliveries) + " have been uploaded !\n"
         elif len(duplicates )>0:
@@ -138,7 +150,7 @@ def handle_excel_file(file):
         return "Invalid file"
 
 
-
+@cache_control(no_cache=True, max_age=0)
 def index(request):
     if request.method == 'POST':
         deliveryform = UploadForm(request.POST, request.FILES)
@@ -149,26 +161,45 @@ def index(request):
                 ##increase the script session for admin retry by 1 day
                 pass
             else:
-
                 if deliveryform.is_valid() and request.FILES.get('excel_file',None):
                     message= handle_excel_file(request.FILES['excel_file'])
                 if consigneeform.is_valid() and request.FILES.get('consignee_file',None):
-                    message= load_excel_file(request.FILES['consignee_file'], 'consignee')
+                    group, created = Group.objects.get_or_create(name='consignee')
+                    fields = ['company name', 'telephone']
+                    message = upload_excel(request.FILES['consignee_file'], group, fields)
+#                    message= load_excel_file(request.FILES['consignee_file'], 'consignee')
                 if transporterform.is_valid() and request.FILES.get('transporter_file',None):
-                    message= load_excel_file(request.FILES['transporter_file'], 'transporter')
-                return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'transporterform':transporterform,'consigneeform':consigneeform,'message':message}, context_instance=RequestContext(request))
+                    group, created = Group.objects.get_or_create(name='transporter')
+                    fields = ['company name', 'telephone']
+                    message = upload_excel(request.FILES['transporter_file'], group, fields)
+#                    message= load_excel_file(request.FILES['transporter_file'], 'transporter')
+                return render_to_response('supplytracking/index.html', 
+                                          {'deliveryform':deliveryform,
+                                           'transporterform':transporterform,
+                                           'consigneeform':consigneeform,
+                                           'message':message
+                                           }, context_instance=RequestContext(request))
 
     deliveryform = UploadForm()
     consigneeform=ConsigneeForm()
     transporterform=TransporterForm()
-    return render_to_response('supplytracking/index.html', {'deliveryform':deliveryform,'transporterform':transporterform,'consigneeform':consigneeform}, context_instance=RequestContext(request))
+    return render_to_response('supplytracking/index.html', {
+                                                            'deliveryform':deliveryform,
+                                                            'transporterform':transporterform,
+                                                            'consigneeform':consigneeform,
+                                                            }, context_instance=RequestContext(request))
+
+@cache_control(no_cache=True, max_age=0)
 def view_deliveries(request):
     deliveries=Delivery.objects.all()
     return render_to_response('supplytracking/deliveries.html',{'deliveries':deliveries},context_instance=RequestContext(request))
+
+@cache_control(no_cache=True, max_age=0)
 def view_consignees(request):
     consignees=Contact.objects.filter(groups__in=[Group.objects.get(name='consignee')])
     return render_to_response('supplytracking/consignees.html',{'consignees':consignees},context_instance=RequestContext(request))
 
+@cache_control(no_cache=True, max_age=0)
 def view_transporters(request):
     transporters=Contact.objects.filter(groups__in=[Group.objects.get(name='transporter')])
     return render_to_response('supplytracking/transporters.html',{'transporters':transporters},context_instance=RequestContext(request))

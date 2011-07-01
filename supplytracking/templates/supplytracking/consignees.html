@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {%  block content %}
-    <a href="/supply_tracking">Home</a>
+    <a href="/supplytracking">Home</a>
     <div class="module">
     <h3>All Consignees</h3>
 <table width="100%">
@@ -10,7 +10,7 @@
     </th>
     <tbody>
     {% for consignee in consignees %}
-    <tr><td>{{consignee.name}}</td><td>{{ consignee.default_connection}}</td> </tr>
+    <tr><td>{{consignee.name}}</td><td>{{ consignee.default_connection.identity }}</td> </tr>
    {% endfor %}
     </tbody>
 </table>

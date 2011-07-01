@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 from rapidsms.models import Contact
 from script.signals import script_progress_was_completed
 from django.utils.text import get_text_list
+import datetime
 
 class Delivery(models.Model):
     SHIPPED='S'
@@ -18,21 +19,25 @@ class Delivery(models.Model):
                                                    (SHIPPED,'shipped'),
                                                    (PENDING, 'pending'),
                                                    (DELIVERED,'delivered'),),default=SHIPPED)
-    date_shipped=models.DateField()
-    date_uploaded=models.DateField(auto_now=True)
-    date_delivered=models.DateField(null=True,blank=True)
+    date_shipped=models.DateTimeField()
+    date_uploaded=models.DateTimeField(auto_now=True)
+    date_delivered=models.DateTimeField(null=True,blank=True)
 
     def get_consignee_msg(self):
-        consignee_deliveries=get_text_list(list(Delivery.objects.filter(consignee=self.consignee).values_list('waybill',flat=True)))
-        msg="have you received consignments %s"%consignee_deliveries
+        consignee_deliveries=get_text_list(list(Delivery.objects.filter(consignee=self.consignee, status=self.SHIPPED).values_list('waybill',flat=True)))
+        msg="Have you received consignments %s ?"%consignee_deliveries
         return msg
     def get_transporter_msg(self):
-        transporter_deliveries=get_text_list(list(Delivery.objects.filter(transporter=self.transporter).values_list('waybill',flat=True)))
-        msg="have you delivered consignments %s"%consignee_deliveries
+        transporter_deliveries=get_text_list(list(Delivery.objects.filter(transporter=self.transporter, status=self.SHIPPED).values_list('waybill',flat=True)))
+        msg="Have you delivered consignments %s ?"%transporter_deliveries
         return msg
+    
+    def overdue(self):
+        return self.date_uploaded + datetime.timedelta(seconds=ScriptStep.objects.filter(script__slug='consingee')[0].start_offset) >= datetime.datetime.now()
 
     def __unicode__(self):
         return '%s'%self.waybill
+    
 class DeliveryBackLog(models.Model):
     delivery=models.ForeignKey(Delivery)
 

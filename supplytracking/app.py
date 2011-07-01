@@ -6,6 +6,7 @@ from .models import *
 import re
 from supplytracking.models import *
 from script.models import ScriptProgress
+from script.utils.incoming import incoming_progress
 
 class App (AppBase):
 
@@ -14,17 +15,30 @@ class App (AppBase):
         waybill_match=waybill_reg.search(message.db_message.text)
         if waybill_match:
             waybill=waybill_match.group('waybill')
-            print waybill
             delivery=Delivery.objects.get(waybill=waybill)
-            if  DeliveryBackLog.objects.filter(delivery__waybill=waybill).exists():
+            
+            #check if message is from consignee
+            if delivery.consignee.default_connection.identity==message.connection.identity:
                 delivery.status=Delivery.DELIVERED
                 delivery.save()
-                DeliveryBackLog.objects.get(delivery=delivery).delete()
-            elif delivery.consignee.default_connection==message.connection and ScriptSession.objects.filter(connection=message.connection).exists():
-                if ScriptProgress.objects.get(connection=message.connection).status:
-                    delivery.status=Delivery.DELIVERED
-                    delivery.save()
-                        
-            return True
+                
+                #if it is in the backlog, delete it
+                if DeliveryBackLog.objects.filter(delivery__waybill=waybill).exists():
+                    DeliveryBackLog.objects.get(delivery=delivery).delete()
+                
+                #get the response to the message if any and send it out
+                response = incoming_progress(message)
+                if response:
+                    message.respond(response)
+                return True
+            
+            #if message is from the transporter simply process the response and send it to transporter
+            elif delivery.transporter.default_connection.identity == message.connection.identity:
+                response = incoming_progress(message)
+                if response:
+                    message.respond(response)
+                return True                     
+        else:
+            return False
 
 
