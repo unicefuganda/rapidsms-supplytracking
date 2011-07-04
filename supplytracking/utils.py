@@ -97,33 +97,6 @@ def create_scripts():
                                          type=type,user=user)
     consignee_poll.sites.add(Site.objects.get_current())
     consignee_poll.start()
-#    consignee_poll.add_yesno_categories()
-#    yes_category = consignee_poll.categories.get(name='yes')
-#    yes_category.name = 'delivered'
-#    yes_category.response = "Thank you for your response" 
-#    yes_category.priority = 4
-#    yes_category.color = '99ff77'
-#    yes_category.save()
-#    no_category = consignee_poll.categories.get(name='no')
-#    no_category.response = "Thank you for your response"
-#    no_category.name = 'undelivered'
-#    no_category.priority = 1
-#    no_category.color = 'ff9977'
-#    no_category.save()
-#    unknown_category = consignee_poll.categories.get(name='unknown')
-#    unknown_category.default = False
-#    unknown_category.priority = 2
-#    unknown_category.color = 'ffff77'
-#    unknown_category.save()
-#    unclear_category = Category.objects.create(
-#        poll = consignee_poll,
-#        name = 'unclear',
-#        default = True,
-#        color = 'ffff77',
-#        response = 'We have received but did not understand your response,please resend (with no or <waybill> COMPLETE <waybill> DAMAGED)',
-#        priority = 3
-#    )
-    
     consignee_script = Script.objects.create(slug="consignee",name="script for consignee",)
     consignee_script.sites.add(Site.objects.get_current())
     
@@ -137,7 +110,7 @@ def create_scripts():
            ))
 
     #create script progress for admins
-    supply_admins=Contact.objects.filter(groups=Group.objects.filter(name="supply_admin"))
+    supply_admins = Contact.objects.filter(groups__name__in=['supply_admin'])
     for admin in supply_admins:
         scriptprogress,progress_created=ScriptProgress.objects.get_or_create(script=Script.objects.get(slug="supply_staff"),
                                                   connection=admin.default_connection)

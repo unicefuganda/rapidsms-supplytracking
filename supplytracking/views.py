@@ -109,7 +109,7 @@ def handle_excel_file(file):
 
             except Delivery.DoesNotExist:
                 if type(parse_consignee(row, worksheet, cols)) == Contact:
-                    delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols),
+                    delivery=Delivery.objects.create(waybill=parse_waybill(row,worksheet,cols).upper(),
                                                            date_shipped=parse_date_shipped(row,worksheet,cols) ,
                                                            consignee=parse_consignee(row,worksheet,cols),
                                                            transporter=parse_transporter(row,worksheet,cols))

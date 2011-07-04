@@ -6,11 +6,23 @@
     <h3>All Deliveries</h3>
 <table width="100%">
     <th>
-        <tr><td>Waybill</td><td>Consignee</td> <td>Transporter</td> <td>Date Shipped</td><td>Status</td></tr>
+        <tr>
+        	<td>Waybill</td>
+			<td>Consignee</td>
+			<td>Transporter</td>
+			<td>Date Shipped</td>
+			<td>Date Delivered</td>
+		</tr>
     </th>
     <tbody>
     {% for delivery in deliveries %}
-    <tr><td>{{delivery.waybill}}</td><td>{{ delivery.consignee}}</td> <td>{{delivery.transporter}}</td> <td>{{delivery.date_shipped}}</td><td>{{delivery.status}}</td></tr>
+        <tr>
+    	   <td>{{delivery.waybill}}</td>
+		   <td>{{ delivery.consignee}}</td>
+		   <td>{{delivery.transporter}}</td>
+		   <td>{{delivery.date_shipped|date:"F, d Y"}}</td>
+		   <td>{% if delivery.status == 'S' %}In Transit{% endif %}{% if delivery.status == 'D' %}{{ delivery.date_delivered|date:"F, d Y" }}{% endif %}</td>
+		</tr>
    {% endfor %}
     </tbody>
 </table>
