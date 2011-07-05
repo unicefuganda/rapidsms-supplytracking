@@ -26,7 +26,7 @@ class App (AppBase):
                     delivery.save()
                     
                     #if it is in the backlog, delete it
-                    if DeliveryBackLog.objects.filter(delivery__waybill=waybill).exists():
+                    if DeliveryBackLog.objects.filter(delivery__waybill=waybill.strip()).exists():
                         DeliveryBackLog.objects.get(delivery=delivery).delete()
                     
             #in case consignee has sent delivery report, send it out to supply admins        
