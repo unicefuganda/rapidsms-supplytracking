@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {%  block content %}
-    <a href="/supplytracking">Home</a>
+    <a href="{% url supplytracking.views.index %}">Home</a>
     <div class="module">
     <h3>All Consignees</h3>
 <table width="100%">

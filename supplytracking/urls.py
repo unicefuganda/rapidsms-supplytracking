@@ -3,7 +3,7 @@ from supplytracking.views import index,view_deliveries,view_consignees,view_tran
 
 urlpatterns = patterns('',
  url(r'^$', index, name="supplytracking"),
-  url(r'^deliveries$', view_deliveries ),
-  url(r'^consignees$', view_consignees ),
-  url(r'^transporters$', view_transporters ),
+  url(r'^deliveries$', view_deliveries, name="deliveries"),
+  url(r'^consignees$', view_consignees, name="consignees" ),
+  url(r'^transporters$', view_transporters, name="transporters"),
 )

@@ -1,8 +1,8 @@
 {% extends 'layout.html' %}
 {%  block content %}
-<a href="/supplytracking/deliveries">View All Deliveries</a>|
-<a href="/supplytracking/consignees">View Consignees</a>|
-<a href="/supplytracking/transporters">View Transporters</a>
+<a href="{% url supplytracking.views.view_deliveries %}">View All Deliveries</a>|
+<a href="{% url supplytracking.views.view_consignees %}">View Consignees</a>|
+<a href="{% url supplytracking.views.view_transporters %}">View Transporters</a>
 <div class="module">
     <h3>Upload Deliveries Excel File</h3>
     <table width="100%">
