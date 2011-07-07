@@ -6,7 +6,7 @@
 <div class="module">
     <h3>Upload Deliveries Excel File</h3>
     <table width="100%">
-        <form enctype="multipart/form-data" action="/supplytracking/" method="POST">
+        <form enctype="multipart/form-data" method="POST">
             {{deliveryform.as_table}}
             <tr>
             	<td></td>
@@ -19,7 +19,7 @@
 <div class="module">
     <h3>Upload Consignees Excel File (Only if list consignees has changed)</h3>
     <table width="100%">
-        <form enctype="multipart/form-data" action="/supplytracking/" method="POST">
+        <form enctype="multipart/form-data" method="POST">
             {{consigneeform.as_table}}
             <tr>
         	   <td></td>
@@ -31,7 +31,7 @@
 <div class="module">
     <h3>Upload Transporter Excel File (Only if list of transporters has changed)</h3>
     <table width="100%">
-        <form enctype="multipart/form-data" action="/supplytracking/" method="POST">
+        <form enctype="multipart/form-data" method="POST">
             {{transporterform.as_table}}
             <tr>
             	<td></td>

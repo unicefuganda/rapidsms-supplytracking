@@ -11,6 +11,12 @@ import os
 
 
 def create_scripts():
+    """ Create the required groups for supply admins, transporters and consignees """
+    
+    Group.objects.get_or_create(name="supply_admin")
+    Group.objects.get_or_create(name="transporter")
+    Group.objects.get_or_create(name="consignee")
+    
     """Create Scripts for supply staff, consignees and transporters"""
     
     site = Site.objects.get_or_create(pk=settings.SITE_ID, defaults={

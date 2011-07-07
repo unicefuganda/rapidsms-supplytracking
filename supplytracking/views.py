@@ -165,7 +165,7 @@ def index(request):
                     message= handle_excel_file(request.FILES['excel_file'])
                 if consigneeform.is_valid() and request.FILES.get('consignee_file',None):
                     group, created = Group.objects.get_or_create(name='consignee')
-                    fields = ['company name', 'telephone']
+                    fields = ['name', 'telephone']
                     message = upload_excel(request.FILES['consignee_file'], group, fields)
 #                    message= load_excel_file(request.FILES['consignee_file'], 'consignee')
                 if transporterform.is_valid() and request.FILES.get('transporter_file',None):
