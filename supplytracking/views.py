@@ -13,6 +13,7 @@ from rapidsms_httprouter.models import Message
 from rapidsms_httprouter.router import HttpRouter
 from rapidsms.models import Connection
 from django.views.decorators.cache import cache_control
+from django.contrib.auth.decorators import login_required
 from ureport.views import handle_excel_file as upload_excel
 
 class UploadForm(forms.Form):
@@ -150,6 +151,7 @@ def handle_excel_file(file):
         return "Invalid file"
 
 
+@login_required
 @cache_control(no_cache=True, max_age=0)
 def index(request):
     if request.method == 'POST':
@@ -188,17 +190,19 @@ def index(request):
                                                             'transporterform':transporterform,
                                                             'consigneeform':consigneeform,
                                                             }, context_instance=RequestContext(request))
-
+@login_required
 @cache_control(no_cache=True, max_age=0)
 def view_deliveries(request):
     deliveries=Delivery.objects.all()
     return render_to_response('supplytracking/deliveries.html',{'deliveries':deliveries},context_instance=RequestContext(request))
 
+@login_required
 @cache_control(no_cache=True, max_age=0)
 def view_consignees(request):
     consignees=Contact.objects.filter(groups__in=[Group.objects.get(name='consignee')])
     return render_to_response('supplytracking/consignees.html',{'consignees':consignees},context_instance=RequestContext(request))
 
+@login_required
 @cache_control(no_cache=True, max_age=0)
 def view_transporters(request):
     transporters=Contact.objects.filter(groups__in=[Group.objects.get(name='transporter')])
