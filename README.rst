@@ -21,9 +21,9 @@ Installation
 ============
 To install SupplyTracking, you need Git.
  - Within your RapidSMS project folder, clone a copy of the supplyTracking code as follows:
- 
- ~/Projects/rapidsms_proj$ git clone git@github.com:asseym/rapidsms-supplytracking.git
- ~/Projects/rapidsms_proj$ pip install xlrd
+
+	~/Projects/rapidsms_proj$ git clone git@github.com:asseym/rapidsms-supplytracking.git
+	~/Projects/rapidsms_proj$ pip install xlrd
 
 Configuration
 =============
